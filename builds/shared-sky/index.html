@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shared Sky</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500&display=swap">
+<style>
+  :root { --bg: #070a1a; --panel: #10152e; --fg: #ece6d6; --muted: #9aa3c7; --gold: #f4d58d; --a: #7fb2ff; --b: #ff8fa3; --edge: #262d52; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 Inter, system-ui, sans-serif;
+         padding-block: 32px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 600px; margin: 0 auto; display: grid; gap: 22px; }
+  .poster { background: var(--panel); border: 1px solid var(--edge); padding: 26px; display: grid; gap: 16px; justify-items: center; }
+  canvas { width: 100%; max-width: 500px; aspect-ratio: 1; display: block; }
+  h1 { margin: 0; font: italic 500 30px/1.15 "Cormorant Garamond", Georgia, serif; color: var(--gold); text-align: center; text-wrap: balance; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+  .both-list { margin: 0; text-align: center; color: var(--fg); font-size: 14px; max-width: 46ch; }
+  .both-list b { color: var(--gold); font-weight: 500; }
+  form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  fieldset { border: 1px solid var(--edge); border-radius: 8px; padding: 12px; display: grid; gap: 8px; min-width: 0; margin: 0; }
+  legend { padding: 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  #fa legend { color: var(--a); } #fb legend { color: var(--b); }
+  label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+  input, select, button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--edge); border-radius: 6px; padding: 8px 9px; min-width: 0; width: 100%; }
+  button { grid-column: 1 / -1; background: var(--gold); color: #1a1830; border: 0; font-weight: 500; cursor: pointer; padding: 10px; }
+  .note { color: var(--muted); font-size: 13px; text-align: center; margin: 0; }
+  @media (max-width: 480px) { form { grid-template-columns: 1fr; } .poster { padding: 16px; } }
+</style>
+</head>
+<body>
+<main>
+  <section class="poster">
+    <h1 id="title">Your shared sky</h1>
+    <canvas id="sky" width="1000" height="1000" aria-label="Both birth skies on one star map"></canvas>
+    <div class="legend"><span><i style="background:var(--a)"></i><span id="la">Only you</span></span><span><i style="background:var(--gold)"></i>Both of you</span><span><i style="background:var(--b)"></i><span id="lb">Only them</span></span></div>
+    <p class="both-list" id="list"></p>
+  </section>
+  <form id="pick">
+    <fieldset id="fa"><legend>You</legend>
+      <label>First name (optional) <input id="na" maxlength="20"></label>
+      <label>Born on <input type="date" id="da" required></label>
+      <label>At (not sure? leave noon) <input type="time" id="ta" required></label>
+      <label>In <select id="ca"></select></label>
+    </fieldset>
+    <fieldset id="fb"><legend>Them</legend>
+      <label>First name (optional) <input id="nb" maxlength="20"></label>
+      <label>Born on <input type="date" id="db" required></label>
+      <label>At (not sure? leave noon) <input type="time" id="tb" required></label>
+      <label>In <select id="cb"></select></label>
+    </fieldset>
+    <button type="button" id="copy">Copy a link to send them</button>
+  </form>
+  <p class="note">Every star of magnitude 5 or brighter that was above the horizon when each of you was born, daytime included: the stars were there, even if the sun hid them. The dashed circles are the edges of your two skies.</p>
+</main>
+<script type="module">
+  import { CITIES } from "./src/cities.js";
+  import { localToDate } from "./src/when.js";
+  import { compare, zenith } from "./src/shared.js";
+  import { drawShared } from "./src/chart.js";
+  import { cleanName, fromHash, toHash } from "./src/share.js";
+
+  const $ = (id) => document.getElementById(id);
+  const two = (n) => String(n).padStart(2, "0");
+  for (const s of ["ca", "cb"]) for (const [n] of CITIES) $(s).add(new Option(n, n));
+  const [A, B] = fromHash(location.hash) || [
+    { name: "", year: 1990, month: 5, day: 17, hour: 12, minute: 0, city: "New York" },
+    { name: "", year: 1992, month: 11, day: 3, hour: 12, minute: 0, city: "London" },
+  ];
+  for (const [p, k] of [[A, "a"], [B, "b"]]) {
+    $("n" + k).value = p.name; $("d" + k).value = `${p.year}-${two(p.month)}-${two(p.day)}`;
+    $("t" + k).value = `${two(p.hour)}:${two(p.minute)}`; $("c" + k).value = p.city;
+  }
+  const read = (k) => {
+    const [year, month, day] = $("d" + k).value.split("-").map(Number);
+    const [hour, minute] = $("t" + k).value.split(":").map(Number);
+    return { name: cleanName($("n" + k).value), year, month, day, hour, minute, city: $("c" + k).value };
+  };
+  const where = (p) => {
+    const [, lat, lon, tz] = CITIES.find((c) => c[0] === p.city);
+    return { date: localToDate(p.year, p.month, p.day, p.hour, p.minute, tz), lat, lon };
+  };
+  const list = (xs) => xs.length > 1 ? xs.slice(0, -1).join(", ") + " and " + xs.at(-1) : xs[0] || "";
+
+  function show() {
+    const a = read("a"), b = read("b");
+    if (!a.year || !b.year || Number.isNaN(a.hour) || Number.isNaN(b.hour)) return;
+    const pa = where(a), pb = where(b);
+    const cmp = compare(pa, pb);
+    const canvas = $("sky"), ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawShared(ctx, cmp, zenith(pa.date, pa.lat, pa.lon), zenith(pb.date, pb.lat, pb.lon), canvas.width);
+    const who = a.name && b.name ? `${a.name} and ${b.name} share` : "You two share";
+    const whose = a.name && b.name ? "their" : "your";
+    $("la").textContent = a.name ? `Only ${a.name}` : "Only you";
+    $("lb").textContent = b.name ? `Only ${b.name}` : "Only them";
+    $("title").textContent = `${who} ${Math.round(cmp.share * 100)}% of ${whose} birth skies`;
+    const bits = [];
+    if (cmp.constellations.length) bits.push(`Whole constellations above you both: <b>${list(cmp.constellations.slice(0, 8))}</b>${cmp.constellations.length > 8 ? ` and ${cmp.constellations.length - 8} more` : ""}.`);
+    if (cmp.named.length) bits.push(`Bright stars you share: <b>${list(cmp.named)}</b>.`);
+    if (!bits.length) bits.push("Your skies barely touched: you were born on opposite sides of the sky.");
+    $("list").innerHTML = bits.join(" ");
+    history.replaceState(null, "", toHash(a, b));
+  }
+  $("pick").addEventListener("input", show);
+  $("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(location.href); $("copy").textContent = "Link copied"; }
+    catch { $("copy").textContent = location.href; }
+    setTimeout(() => ($("copy").textContent = "Copy a link to send them"), 2000);
+  });
+  show();
+</script>
+</body>
+</html>

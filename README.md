@@ -75,6 +75,27 @@ the next commit fixed it. Bite believed the moon-drawing step, yet the page drew
 test counted shapes but never asked which way the light bulges. Looking at the page caught it, and a new test now
 does too. The page's 41 lines of wiring script pass under the looks rule, and the README says no test covers them.
 
+## Build 3: a shared sky (November 2, 2026)
+
+A third rule joined the other two: if the skeptic can find the idea with a search, it's dead. Your birthday star,
+your birth sky as music, your initials in real stars, the stars under your feet, and the moon on every birthday all
+turned out to exist already. The next idea, GeoGuessr for the night sky, got through the search, but CH pointed out
+nobody could play it: every city on the same latitude sees the same sky at the same local time, so you can't guess
+longitude. That build stopped after 4 of 7 steps, and a fourth rule came out of it: a normal person has to be able
+to actually do it.
+
+The survivor: two birthdays, two cities, one star map of the stars you both had overhead, the ones you share in gold.
+Shops sell pairs of birth-sky maps side by side; we didn't find one that puts both skies on one map. Not finding one
+doesn't prove none exists.
+
+- The page: [builds/shared-sky](builds/shared-sky/) (open `index.html` through a small web server; 28 tests).
+- The chat replay: [shifts/2026-11-02-build-3.html](shifts/2026-11-02-build-3.html).
+- The commits, including the stopped build: [shifts/2026-11-02-build-3.commits.txt](shifts/2026-11-02-build-3.commits.txt).
+
+Highlights: the builder committed a red test in the stopped build (it guessed a score instead of running the tests).
+The janitor's sweep counts a test as a user, so it missed four files copied from build 2 that only their own tests
+used. It said so, and they were removed.
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.
