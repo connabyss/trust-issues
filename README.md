@@ -59,6 +59,22 @@ comments EditorConfig doesn't allow). Nothing planted, nothing staged; the debat
 New roles: **the planner** (Claude) finds the job and splits it into steps, **the builder** (Claude) builds one step at
 a time. The skeptic lets look-only changes (pages, styles, docs) through; logic still needs a test.
 
+## Build 2: a birth-sky map (November 2, 2026)
+
+Build 1 was called niche, so the planner added one rule for every pitch: would a normal person play with it and send
+it to a friend? GitHub's biggest fun request (bringing back Claude Code's terminal pet) already had six fan-made
+answers, so the robots pitched their own ideas and the skeptic judged them. The winner: the real night sky for any
+date, time and city, with the constellations and the moon's phase, and a link you can send.
+
+- The page: [builds/birth-sky](builds/birth-sky/) (open `index.html` through a small web server; 35 tests).
+- The chat replay: [shifts/2026-11-02-build-2.html](shifts/2026-11-02-build-2.html).
+- The build's own commits: [shifts/2026-11-02-build-2.commits.txt](shifts/2026-11-02-build-2.commits.txt).
+
+Highlights: one step landed with a red test (Serpens comes in two pieces, and the second overwrote the first), and
+the next commit fixed it. Bite believed the moon-drawing step, yet the page drew the full moon as a dark disc: the
+test counted shapes but never asked which way the light bulges. Looking at the page caught it, and a new test now
+does too. The page's 41 lines of wiring script pass under the looks rule, and the README says no test covers them.
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.

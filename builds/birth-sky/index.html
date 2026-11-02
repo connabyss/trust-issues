@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Birth Sky</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500&display=swap">
+<style>
+  :root { --bg: #070a1a; --panel: #10152e; --fg: #ece6d6; --muted: #9aa3c7; --gold: #e9d8a6; --edge: #262d52; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 Inter, system-ui, sans-serif;
+         padding-block: 32px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 560px; margin: 0 auto; display: grid; gap: 22px; }
+  .poster { background: var(--panel); border: 1px solid var(--edge); padding: 28px 28px 24px; display: grid; gap: 18px; justify-items: center; }
+  canvas { width: 100%; max-width: 480px; aspect-ratio: 1; display: block; }
+  .caption { text-align: center; display: grid; gap: 4px; }
+  .caption h1 { margin: 0; font: italic 500 30px/1.15 "Cormorant Garamond", Georgia, serif; color: var(--gold); text-wrap: balance; }
+  .caption p { margin: 0; color: var(--muted); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  input, select, button { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--edge); border-radius: 6px; padding: 9px 10px; min-width: 0; }
+  button { grid-column: 1 / -1; background: var(--gold); color: #1a1830; border: 0; font-weight: 500; cursor: pointer; }
+  .note { color: var(--muted); font-size: 13px; text-align: center; margin: 0; }
+  @media (max-width: 460px) { form { grid-template-columns: 1fr 1fr; } form label:last-of-type { grid-column: 1 / -1; } .poster { padding: 18px; } }
+</style>
+</head>
+<body>
+<main>
+  <section class="poster">
+    <canvas id="sky" width="960" height="960" aria-label="Star map"></canvas>
+    <div class="caption"><h1 id="title">The sky over New York</h1><p id="when"></p></div>
+  </section>
+  <form id="pick">
+    <label>Date <input type="date" id="date" required></label>
+    <label>Time <input type="time" id="time" required></label>
+    <label>City <select id="city"></select></label>
+    <button type="button" id="copy">Copy a link to this sky</button>
+  </form>
+  <p class="note">The real sky for any date, time and city: about 1,600 stars, the 88 constellations and the moon's phase. North is up, east is on the left, like holding the map over your head.</p>
+</main>
+<script type="module">
+  import { CITIES } from "./src/cities.js";
+  import { localToDate } from "./src/when.js";
+  import { skyAt } from "./src/sky.js";
+  import { drawSky } from "./src/render.js";
+  import { fromHash, toHash } from "./src/share.js";
+
+  const $ = (id) => document.getElementById(id);
+  for (const [name] of CITIES) $("city").add(new Option(name, name));
+  const start = fromHash(location.hash) || { year: 1990, month: 5, day: 17, hour: 23, minute: 30, city: "New York" };
+  const two = (n) => String(n).padStart(2, "0");
+  $("date").value = `${start.year}-${two(start.month)}-${two(start.day)}`;
+  $("time").value = `${two(start.hour)}:${two(start.minute)}`;
+  $("city").value = start.city;
+
+  function pick() {
+    const [year, month, day] = $("date").value.split("-").map(Number);
+    const [hour, minute] = $("time").value.split(":").map(Number);
+    return { year, month, day, hour, minute, city: $("city").value };
+  }
+  function show() {
+    const p = pick();
+    if (!p.year || Number.isNaN(p.hour)) return;
+    const [name, lat, lon, tz] = CITIES.find((c) => c[0] === p.city);
+    const sky = skyAt(localToDate(p.year, p.month, p.day, p.hour, p.minute, tz), lat, lon);
+    const canvas = $("sky");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawSky(ctx, sky, canvas.width);
+    $("title").textContent = `The sky over ${name}`;
+    const d = new Date(Date.UTC(p.year, p.month - 1, p.day, 12));
+    const day = d.toLocaleDateString("en-US", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
+    const ns = lat >= 0 ? "N" : "S", ew = lon >= 0 ? "E" : "W";
+    $("when").textContent = `${day} · ${$("time").value} · ${Math.abs(lat).toFixed(2)}° ${ns}, ${Math.abs(lon).toFixed(2)}° ${ew}`;
+    history.replaceState(null, "", toHash(p));
+  }
+  $("pick").addEventListener("input", show);
+  $("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(location.href); $("copy").textContent = "Link copied"; }
+    catch { $("copy").textContent = location.href; }
+    setTimeout(() => ($("copy").textContent = "Copy a link to this sky"), 2000);
+  });
+  addEventListener("hashchange", () => location.reload());
+  show();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "birth-sky",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
