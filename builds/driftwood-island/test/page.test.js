@@ -79,11 +79,19 @@ test("fast-forward shows the week ahead, kinds splitting off, then comes back to
     await page.click("#ff");
     assert.equal(await page.getAttribute("#ff", "aria-pressed"), "true");
     assert.ok(await page.isVisible(".preview-tag"));
+    // Normal speed: a day in about 20 seconds. Pause holds the moment still.
     await page.clock.runFor(20000);
+    assert.match(await page.textContent("#clock"), /^Day 8,/);
+    await page.click('[data-speed="pause"]');
+    const held = await page.textContent("#clock");
+    await page.clock.runFor(5000);
+    assert.equal(await page.textContent("#clock"), held);
+    await page.click('[data-speed="fast"]');
+    await page.clock.runFor(30000);
     assert.match(await page.textContent("#clock"), /^Day 1[2-4],/);
     assert.ok(await page.locator("#kinds li").count() >= 3, "kinds should have split off by then");
     assert.match(await page.textContent("#history"), /split off/);
-    await page.clock.runFor(8000);
+    await page.clock.runFor(15000);
     assert.equal(await page.textContent("#clock"), "Day 7, 12:00 pm");
     assert.equal(await page.locator("#kinds li").count(), 1);
     assert.ok(!(await page.isVisible(".preview-tag")));

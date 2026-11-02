@@ -318,24 +318,35 @@ function play(mode) {
   if (was === mode) return;
   const start = mode === "replay" ? runTo(live.tick - TICKS_PER_DAY) : cloneState(live);
   const end = mode === "replay" ? live.tick : live.tick + FF_DAYS * TICKS_PER_DAY;
-  replay = { mode, frames: [cloneState(start)], work: start, end, k: 0, t0: performance.now(), per: mode === "replay" ? 90 : 25 }; // a day in 13 s; the week ahead in about 25 s
+  replay = { mode, frames: [cloneState(start)], work: start, end, pos: 0, last: performance.now() };
   $(mode).textContent = "Back to now";
   $(mode).setAttribute("aria-pressed", "true");
-  document.body.classList.add(mode === "replay" ? "replaying" : "previewing");
+  document.body.classList.add(mode === "replay" ? "replaying" : "previewing", "playing");
 }
+
+// How fast a replay or fast-forward plays, in milliseconds per ten-minute tick. 0 is paused.
+const SPEEDS = { pause: 0, slow: 420, normal: 140, fast: 40 }; // a day in 60 s, 20 s, 6 s
+let speed = "normal";
+function setSpeed(name) {
+  speed = name;
+  for (const b of document.querySelectorAll("[data-speed]")) b.setAttribute("aria-pressed", String(b.dataset.speed === name));
+}
+for (const b of document.querySelectorAll("[data-speed]")) b.addEventListener("click", () => setSpeed(b.dataset.speed));
 function stopReplay() {
   replay = null;
   $("replay").textContent = "Replay the last 24 hours";
   $("ff").textContent = "Fast-forward a week";
   for (const id of ["replay", "ff"]) $(id).setAttribute("aria-pressed", "false");
-  document.body.classList.remove("replaying", "previewing");
+  document.body.classList.remove("replaying", "previewing", "playing");
 }
 
 let shown = null; // the moment on screen (live, or a replay/fast-forward frame)
 
 function frame(now) {
   if (replay) {
-    const pos = (now - replay.t0) / replay.per, k = Math.floor(pos);
+    if (SPEEDS[speed]) replay.pos += Math.min(100, now - replay.last) / SPEEDS[speed];
+    replay.last = now;
+    const pos = replay.pos, k = Math.floor(pos);
     while (replay.frames.length < k + 2 && replay.work.tick < replay.end) { step(replay.work); replay.frames.push(cloneState(replay.work)); }
     if (replay.frames.length > k + 2) replay.frames[k - 1] = null; // let old moments go
     if (k >= replay.frames.length - 1) stopReplay();

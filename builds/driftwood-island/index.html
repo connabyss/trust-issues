@@ -26,6 +26,8 @@ background:rgba(255,140,60,.9);color:#2b1606;padding:3px 8px;border-radius:4px;d
 .preview-tag{position:absolute;top:10px;left:10px;right:10px;width:max-content;max-width:calc(100% - 20px);font:500 .72rem var(--mono);letter-spacing:.06em;
 background:rgba(140,200,255,.92);color:#06223a;padding:3px 8px;border-radius:4px;display:none}
 .previewing .preview-tag{display:block}
+.speeds{display:none;gap:4px}.playing .speeds{display:inline-flex}
+.speeds button{padding:6px 12px;font-size:.8rem}
 #kinds li{grid-template-columns:22px 1fr;column-gap:8px;align-items:center}
 #kinds li .when{grid-column:2}
 #kinds .dot{border-radius:50%;border:1px solid var(--rule);justify-self:center}
@@ -66,6 +68,12 @@ li{display:grid;gap:1px}
     <button id="replay" type="button" aria-pressed="false">Replay the last 24 hours</button>
     <button id="ff" type="button" aria-pressed="false">Fast-forward a week</button>
     <button id="whole" type="button" aria-pressed="false">Whole island</button>
+    <span class="speeds" role="group" aria-label="Playback speed">
+      <button type="button" data-speed="pause" aria-pressed="false">Pause</button>
+      <button type="button" data-speed="slow" aria-pressed="false">Slow</button>
+      <button type="button" data-speed="normal" aria-pressed="true">Normal</button>
+      <button type="button" data-speed="fast" aria-pressed="false">Fast</button>
+    </span>
     <p class="small">Island time is UTC-5 all year. The island moves every ten minutes; leave it open and watch.</p>
   </div>
   <div class="cols">
