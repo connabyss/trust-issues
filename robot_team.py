@@ -162,6 +162,10 @@ def skeptic(d, sha=None):
         log(d, "skeptic", "Only looks and words in this one (" + ", ".join(files) + "). Tests can't judge how "
             "things look, so it gets a pass. Logic still has to prove itself.", sha=sha, result="looks_pass")
         return
+    if files and all(re.search(r"(^|/)(tests?/|test_)|\.test\.|_test\.", f) for f in files):
+        log(d, "skeptic", "Only tests in this one. I check code: there's nothing here for me to take back out. "
+            "A new test proves itself when it catches something.", sha=sha, result="tests_only")
+        return
     r = bite(d, "--any", "--only", sha)
     hits = [c for c in r["commits"] if c["sha"].startswith(sha[:7]) or sha.startswith(c["sha"][:7])]
     if not hits:
@@ -171,7 +175,9 @@ def skeptic(d, sha=None):
     why = re.search(r"\b(test_\w+)", c.get("label", "") + " " + c.get("detail", ""))
     text = SKEPTIC.get(c["result"], c["detail"]).format(why=why.group(1) if why else "A test", detail=c["detail"],
                                                  reason=re.sub(r"^Skipped:\s*", "", c["detail"]).rstrip("."))
-    only_deleted = files and git(d, "show", "--name-only", "--diff-filter=D", "--format=", sha).split() == files
+    added = sum(int(x.split("\t")[0]) for x in git(d, "show", "--numstat", "--format=", sha).splitlines()
+                if x.split("\t")[0].isdigit())
+    only_deleted = files and (added == 0 or git(d, "show", "--name-only", "--diff-filter=D", "--format=", sha).split() == files)
     if c["result"] == "no_test_noticed" and only_deleted:
         text = ("You only deleted something. I put it back and every test stayed green, so it really was doing "
                 "nothing. Fine.")

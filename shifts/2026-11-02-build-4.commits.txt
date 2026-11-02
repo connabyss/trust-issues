@@ -1,0 +1,21 @@
+8afc0cb Planner (Claude): Empty project: Worldseed
+a1987c3 Builder (Claude): Seeded dice and smooth 3D noise
+a1318d4 Builder (Claude): The planet: a height for every patch of the globe, 60% ocean
+f31111b Builder (Claude): Climate and biomes: heat, rain and 13 kinds of land and sea
+b38d888 Builder (Claude): Rivers that run downhill to the sea, and lakes in the hollows
+50f0305 Builder (Claude): Draw the globe: a lit, spinning planet with a night side
+1deec16 Builder (Claude): Test the planet's detail and the snapshot tool
+104524b Builder (Claude): Fix the snapshot test: sunny ocean is darker than I guessed
+181bcd7 Builder (Claude): Names: a small language for every people
+ba4b270 Builder (Claude): Fix city names running out: 16 of 210 cities were numbered
+8012f9f Builder (Claude): Take out the soft-ending syllables: the fix didn't need them
+e3e2f8b Builder (Claude): Peoples and their history: cities, wars, plague, sails, breakaways
+f84392f Builder (Claude): Meteors: drop one, the land scars, history takes a new road
+364b5e0 Builder (Claude): Stop handing back the meteor list: nothing uses it
+153f435 Builder (Claude): What the page shows for a year: borders, night lights, share link
+71573f5 Builder (Claude): Fix the past knowing the future: city owners and lights by year
+7376b53 Builder (Claude): Make craters visible from space: a scorched bowl with a lake
+680d27c Builder (Claude): Tests that tell the new crater from the old one
+d9d2aa7 Builder (Claude): The page: type a word, watch it, spin it, scrub time, drop a meteor
+74e0762 Builder (Claude): Test the one-file version of the page
+729aaac Builder (Claude): README: what Worldseed is, how to run it, what the tests do and don't cover
