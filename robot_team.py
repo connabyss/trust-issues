@@ -13,6 +13,7 @@ Every robot line is logged to <project>/shift.jsonl as it happens. `page` turns 
   python robot_team.py build DIR "msg" "what the builder says"   builder commits one step
   python robot_team.py init DIR              v1: make the toy lemonade-stand project (planted bugs)
   python robot_team.py commit DIR "msg" "what the writer says"   writer commits its change
+  python robot_team.py talk DIR ROBOT "text" [LINK]  a debate line, written by Claude in that robot's voice
   python robot_team.py say DIR ROBOT "text"  a line with no action behind it (shown as staged on the page)
   python robot_team.py skeptic DIR [SHA]     Bite checks one commit (default: the newest)
   python robot_team.py janitor DIR           sweep dead code, tests must stay green
@@ -170,6 +171,14 @@ def skeptic(d, sha=None):
     why = re.search(r"\b(test_\w+)", c.get("label", "") + " " + c.get("detail", ""))
     text = SKEPTIC.get(c["result"], c["detail"]).format(why=why.group(1) if why else "A test", detail=c["detail"],
                                                  reason=re.sub(r"^Skipped:\s*", "", c["detail"]).rstrip("."))
+    only_deleted = files and git(d, "show", "--name-only", "--diff-filter=D", "--format=", sha).split() == files
+    if c["result"] == "no_test_noticed" and only_deleted:
+        text = ("You only deleted something. I put it back and every test stayed green, so it really was doing "
+                "nothing. Fine.")
+    part = re.search(r"but not (.+?): with only that part taken out", c.get("detail", ""))
+    if c["result"] == "no_test_noticed" and part:
+        text = (f"Your tests notice most of this, but not {part.group(1)}. I took just that part out and every test "
+                "stayed green. If it breaks, nobody finds out. Prove it.")
     log(d, "skeptic", text, sha=sha, result=c["result"], bite_label=c["label"], bite_detail=c["detail"])
 
 
@@ -346,13 +355,13 @@ PAGE = """<title>Robot Dev Team</title>
 <style>
 /* Layout: one narrow chat column, a cast strip on top, the log reads like a team chat transcript */
 :root{--bg:#f3f5f2;--fg:#17201b;--mut:#5d6a62;--panel:#ffffff;--line:#d9e0da;
---writer:#2f6fdb;--skeptic:#d2561c;--janitor:#2c8a4f;--historian:#7a4fc4;--tint:.10;
+--writer:#2f6fdb;--planner:#a2700a;--skeptic:#d2561c;--janitor:#2c8a4f;--historian:#7a4fc4;--tint:.10;
 --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
 --body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;
---panel:#1b2420;--line:#2c3832;--writer:#7aa7ff;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}}
+--panel:#1b2420;--line:#2c3832;--writer:#7aa7ff;--planner:#e8b84a;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;--panel:#1b2420;--line:#2c3832;
---writer:#7aa7ff;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}
+--writer:#7aa7ff;--planner:#e8b84a;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body)}
 main{max-width:720px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));
@@ -364,7 +373,7 @@ h1{font:750 clamp(1.7rem,5vw,2.4rem)/1.1 var(--display);margin:0 0 6px;text-wrap
 .cast b{display:block;color:var(--fg)}
 .av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--bg);
 font:750 .95rem var(--display);background:var(--c)}
-.writer{--c:var(--writer)}.skeptic{--c:var(--skeptic)}.janitor{--c:var(--janitor)}.historian{--c:var(--historian)}
+.writer,.builder{--c:var(--writer)}.planner{--c:var(--planner)}.skeptic{--c:var(--skeptic)}.janitor{--c:var(--janitor)}.historian{--c:var(--historian)}
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
 button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;
 padding:6px 12px;cursor:pointer}button:focus-visible{outline:2px solid var(--writer);outline-offset:2px}
@@ -382,8 +391,8 @@ code{font:.82em var(--mono)}
 @media (prefers-reduced-motion:reduce){.msg{transition:none}}
 </style>
 <main>
-<h1>My dev team is 4 robots</h1>
-<p class="sub">And one of them doesn't trust the others. One real shift on a tiny lemonade-stand till, __DATE__.</p>
+<h1>__H1__</h1>
+<p class="sub">__SUB__</p>
 <div class="cast">__CAST__</div>
 <div class="bar"><button id="play" type="button">Play the shift</button><button id="all" type="button">Show it all</button></div>
 <div id="chat">__MSGS__</div>
@@ -398,10 +407,13 @@ timers=ms.map((m,i)=>setTimeout(()=>{m.classList.remove('off');m.scrollIntoView(
 </script>"""
 
 
-def page(d, out, note=""):
+def page(d, out, note="", h1="My dev team is 4 robots",
+         sub="And one of them doesn't trust the others. One real shift on a tiny lemonade-stand till, __DATE__."):
     evs = [json.loads(l) for l in (Path(d) / "shift.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    seen = {ev["robot"] for ev in evs}
     cast = "".join(f'<div class="{k}"><span class="av">{n.split()[-1][0].upper()}</span>'
-                   f'<span><b>{html.escape(n)}</b>{html.escape(w)}</span></div>' for k, (n, w, _) in ROBOTS.items())
+                   f'<span><b>{html.escape(n)}</b>{html.escape(w)}</span></div>'
+                   for k, (n, w, _) in ROBOTS.items() if k in seen)
     msgs = []
     for ev in evs:
         name, who, _ = ROBOTS[ev["robot"]]
@@ -413,13 +425,17 @@ def page(d, out, note=""):
         if ev.get("bite_label"):
             meta.append(f'Bite said: {html.escape(ev["bite_label"])}')
         meta.append(datetime.datetime.fromisoformat(ev["t"]).astimezone(EASTERN).strftime("%-I:%M %p ET"))
-        tag = '<span class="staged">staged</span>' if ev.get("staged") else ""
+        tag = ('<span class="staged">staged</span>' if ev.get("staged") else
+               '<span class="staged">voiced by Claude</span>' if ev.get("voiced") else "")
+        if ev.get("link"):
+            meta.insert(0, f'<a href="{html.escape(ev["link"])}" target="_blank" rel="noopener">source</a>')
         msgs.append(f'<div class="msg {ev["robot"]}"><span class="av">{name.split()[-1][0].upper()}</span>'
                     f'<div class="bub"><div class="who">{name} <span>{html.escape(who)}</span>{tag}</div>'
                     f'{html.escape(ev["text"])}<div class="meta">{" · ".join(meta)}</div></div></div>')
     date = datetime.datetime.fromisoformat(evs[0]["t"]).astimezone(EASTERN).strftime("%B %-d, %Y") if evs else ""
     Path(out).write_text(PAGE.replace("__CAST__", cast).replace("__MSGS__", "\n".join(msgs))
-                         .replace("__NOTE__", note).replace("__DATE__", date), encoding="utf-8")
+                         .replace("__NOTE__", note).replace("__H1__", html.escape(h1))
+                         .replace("__SUB__", html.escape(sub)).replace("__DATE__", date), encoding="utf-8")
     print(f"page: {out}")
 
 
@@ -442,6 +458,8 @@ if __name__ == "__main__":
         new_js(d, a[2])
     elif cmd == "say":
         log(d, a[2], a[3], staged=True)
+    elif cmd == "talk":  # an opinion in the debate, written by Claude in that robot's voice (shown as "voiced")
+        log(d, a[2], a[3], voiced=True, **({"link": a[4]} if len(a) > 4 else {}))
     elif cmd == "skeptic":
         skeptic(d, a[2] if len(a) > 2 else None)
     elif cmd == "janitor":
@@ -449,6 +467,6 @@ if __name__ == "__main__":
     elif cmd == "historian":
         historian(d)
     elif cmd == "page":
-        page(d, a[2], a[3] if len(a) > 3 else "")
+        page(d, a[2], *a[3:6])
     else:
         sys.exit(__doc__)

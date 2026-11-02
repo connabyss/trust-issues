@@ -35,6 +35,23 @@ Open [shifts/2026-11-02.html](shifts/2026-11-02.html) in a browser and press **P
 
 **Bonus:** the janitor's tidy-up confused the skeptic and turned up a real Bite weak spot. See [notes/bite-weak-spot-2026-11-02.md](notes/bite-weak-spot-2026-11-02.md).
 
+## Build 1: the robots built a tool nobody had built (November 2, 2026)
+
+In v2 nobody tells the team what to make. The planner went looking for real people asking for a tool that doesn't
+exist, the robots argued over four real GitHub requests, and they picked one that had been open since 2015: moving old
+StyleCop settings to the new StyleCop analyzers ("there's no converter, start from scratch"). Then they built it.
+
+- The tool: [builds/stylecop-mover](builds/stylecop-mover/) (24 tests).
+- The chat replay: open [shifts/2026-11-02-build-1.html](shifts/2026-11-02-build-1.html) and press **Play the shift**.
+- The build's own commits: [shifts/2026-11-02-build-1.commits.txt](shifts/2026-11-02-build-1.commits.txt).
+
+Highlights: the skeptic sent work back twice (an untested rule-table maker, then an empty file that did nothing), and
+the builder caught three of its own mistakes (a renamed rule, a wrong "every rule is on by default" claim, and
+comments EditorConfig doesn't allow). Nothing planted, nothing staged; the debate lines are tagged "voiced by Claude".
+
+New roles: **the planner** (Claude) finds the job and splits it into steps, **the builder** (Claude) builds one step at
+a time. The skeptic lets look-only changes (pages, styles, docs) through; logic still needs a test.
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.
@@ -55,5 +72,6 @@ Every robot line is saved to `shop/shift.jsonl` as it happens. In this first ver
 ## Files
 
 - `robot_team.py`: the whole team in one script.
+- `builds/`: what the team built.
 - `shifts/`: each shift's log (`.jsonl`) and its chat replay page (`.html`).
 - `notes/`: things the robots turned up.

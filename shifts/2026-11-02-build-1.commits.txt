@@ -1,0 +1,12 @@
+65f8b79 Planner (Claude): Empty project: stylecop-mover, with a snapshot of the new StyleCop's rule docs
+26cee22 Builder (Claude): Rule table: old StyleCop rule names and their SA numbers
+8f17e64 Builder (Claude): Test that the rule table matches its sources
+da89715 Builder (Claude): Remove an empty file nothing needs
+30a7f59 Builder (Claude): Read old Settings.StyleCop files
+aa94108 Builder (Claude): Write switched-off rules as .editorconfig lines
+a47d4ba Builder (Claude): Move matching settings into stylecop.json
+03c9e19 Builder (Claude): Report what moved and what didn't
+f03677a Builder (Claude): The command: python -m stylecop_mover Settings.StyleCop
+298e4aa Builder (Claude): Fix: rules switched on are moved too
+c77da9b Builder (Claude): Put rule names on their own line in .editorconfig
+045e0cb Builder (Claude): README
