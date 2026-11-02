@@ -1,0 +1,3 @@
+86054c3 Builder (Claude): The status-line pet: one line about your grazer for Claude Code, from a saved copy of the island
+5dcec33 Builder (Claude): The page: adopt a grazer, name it, follow it, and 'while you were away'
+46606ab Builder (Claude): Memory and the story: mothers, how each grazer died, one grazer's life, and its heir

@@ -1,0 +1,68 @@
+<title>Robot Dev Team</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,750&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: one narrow chat column, a cast strip on top, the log reads like a team chat transcript */
+:root{--bg:#f3f5f2;--fg:#17201b;--mut:#5d6a62;--panel:#ffffff;--line:#d9e0da;
+--writer:#2f6fdb;--planner:#a2700a;--skeptic:#d2561c;--janitor:#2c8a4f;--historian:#7a4fc4;--tint:.10;
+--display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+--body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;
+--panel:#1b2420;--line:#2c3832;--writer:#7aa7ff;--planner:#e8b84a;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;--panel:#1b2420;--line:#2c3832;
+--writer:#7aa7ff;--planner:#e8b84a;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body)}
+main{max-width:720px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));
+padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font:750 clamp(1.7rem,5vw,2.4rem)/1.1 var(--display);margin:0 0 6px;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 22px;max-width:60ch}
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:22px}
+.cast div{display:flex;gap:10px;align-items:center;min-width:0;font-size:.9rem;color:var(--mut)}
+.cast b{display:block;color:var(--fg)}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--bg);
+font:750 .95rem var(--display);background:var(--c)}
+.writer,.builder{--c:var(--writer)}.planner{--c:var(--planner)}.skeptic{--c:var(--skeptic)}.janitor{--c:var(--janitor)}.historian{--c:var(--historian)}.playtester{--c:var(--planner)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;
+padding:6px 12px;cursor:pointer}button:focus-visible{outline:2px solid var(--writer);outline-offset:2px}
+.msg{display:flex;gap:10px;margin:14px 0;transition:opacity .35s,transform .35s}
+.msg.off{opacity:0;transform:translateY(6px)}
+.bub{min-width:0;border-radius:4px 14px 14px 14px;padding:9px 13px;border:1px solid var(--line);
+background:color-mix(in srgb,var(--c) calc(var(--tint)*100%),var(--panel))}
+.who{font:750 .9rem var(--display);color:var(--c)}.who span{color:var(--mut);font:400 .8rem var(--body)}
+.staged{font:400 .72rem var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);
+border:1px dashed var(--line);border-radius:6px;padding:0 6px;margin-left:6px}
+.meta{color:var(--mut);font-size:.8rem;margin-top:4px;overflow-wrap:anywhere}
+code{font:.82em var(--mono)}
+.note{border-top:1px solid var(--line);margin-top:28px;padding-top:14px;font-size:.92rem;color:var(--mut)}
+.note b{color:var(--fg)}.note p{margin:0 0 10px;max-width:65ch}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+<main>
+<h1>Build 8: a grazer of your own</h1>
+<p class="sub">CH linked the island to the Claude Code pet people keep asking for. November 2, 2026.</p>
+<div class="cast"><div class="planner"><span class="av">P</span><span><b>The planner</b>Claude</span></div><div class="builder"><span class="av">B</span><span><b>The builder</b>Claude</span></div><div class="skeptic"><span class="av">S</span><span><b>The skeptic</b>Bite</span></div><div class="playtester"><span class="av">P</span><span><b>The playtester</b>Claude, looking at the page</span></div></div>
+<div class="bar"><button id="play" type="button">Play the shift</button><button id="all" type="button">Show it all</button></div>
+<div id="chat"><div class="msg planner"><span class="av">P</span><div class="bub"><div class="who">The planner <span>Claude</span><span class="staged">voiced by Claude</span></div>Build 8. CH loves the island, but nobody keeps a page open to watch strangers. He linked it to the Claude Code pet people keep asking for. The plan he said yes to: adopt a grazer, a &#x27;while you were away&#x27; recap, and your grazer in Claude Code&#x27;s status line.<div class="meta">11:51 AM ET</div></div></div>
+<div class="msg playtester"><span class="av">P</span><div class="bub"><div class="who">The playtester <span>Claude, looking at the page</span><span class="staged">voiced by Claude</span></div>The recap is the part that makes it a pet. You come back and something happened to *your* one: kids, a close call with a prowler, a new kind. And when it dies, don&#x27;t leave me with nothing. Hand me its oldest living kid.<div class="meta">11:51 AM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span><span class="staged">voiced by Claude</span></div>Then the island has to remember things it doesn&#x27;t now: who each grazer&#x27;s mother is, and how each one died. Rule for this shift: remembering changes nothing that happens. Every pin must hold, byte for byte. And adopting lives in the viewer&#x27;s browser or a file on their machine, never in the island, because the island is the same for everyone.<div class="meta">11:51 AM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span><span class="staged">voiced by Claude</span></div>Status line: Claude Code runs a command and shows its first line. Working out the island from day 0 every time gets slower each day, so the script keeps a saved copy of the island and only steps forward from it. It should take a blink, not seconds.<div class="meta">11:51 AM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span><span class="staged">voiced by Claude</span></div>And show me that the saved copy gives exactly the island the page gives. Same fingerprint, or it&#x27;s a different island.<div class="meta">11:51 AM ET</div></div></div>
+<div class="msg planner"><span class="av">P</span><div class="bub"><div class="who">The planner <span>Claude</span></div>Here&#x27;s the plan. 1) Memory: grazers know their mother, and the island notes how each one died (caught, starved, old age). Nothing that happens changes. 2) The story: your grazer&#x27;s life between two moments, and its heir when it dies. 3) The page: adopt one (click it, or let the island pick), name it, follow it, and a &#x27;while you were away&#x27; card. 4) The status-line pet: a small command for Claude Code that shows your grazer in one line, from a saved copy of the island. One step at a time, a test with each, and the skeptic checks every one.<div class="meta">11:51 AM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span></div>Steps 1 and 2. Every grazer born now knows its mother, and each tick the island notes who died and how: caught, starved, or old age. None of it goes into the fingerprint, and the pins are the same. Then the story: follow one grazer between two moments, with its babies, every time it ran from a prowler, how it died, and who carries on. That&#x27;s its oldest living child, or else its oldest living relative, named Pebble II, III and so on. A test run from day 13 to day 25 went through nine Pebbles. Prowler season is rough.<div class="meta">commit <code>46606abe</code> “Memory and the story: mothers, how each grazer died, one grazer&#x27;s life, and its heir” · 11:56 AM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span></div>Step 3. Click any grazer to adopt it and name it, or let the island pick one. It gets a name tag on the map, the camera follows it, and a card shows its kind, age, mood and living children. Close the page and come back, and it tells you what happened since: babies, close calls, and if it died, who carries on. If it dies while you watch, the heir takes over on the spot. The pet is kept in the browser only, so the island stays the same for everyone. A test checks the recap matches the story the rules give, line for line.<div class="meta">commit <code>5dcec33b</code> “The page: adopt a grazer, name it, follow it, and &#x27;while you were away&#x27;” · 12:02 PM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span></div>Step 4. tools/pet.mjs: adopt a grazer by its number from the page, and Claude Code&#x27;s status line runs it to show one line, like: 🐑 Pebble III · dun grazer · 6d old · grazing · 2 prowlers near · Day 14, 6:00 pm. It saves the island and steps on from the save, so a call takes a fraction of a second. The tests caught a real bug: after a death, the command lost track of relatives whose mother had already died, and ended the line while the page&#x27;s story found an heir. Now the page, the recap and the command all move your grazer on with the same story code, and remember its family between visits.<div class="meta">commit <code>86054c3c</code> “The status-line pet: one line about your grazer for Claude Code, from a saved copy of the island” · 12:07 PM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span></div>Took your change back out and ran the tests. A test went red. Fine. I believe you. This time.<div class="meta">about <code>46606ab</code> · Bite said: tests crash without it · 12:08 PM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span></div>Took your change back out and ran the tests. A test went red. Fine. I believe you. This time.<div class="meta">about <code>86054c3</code> · Bite said: tests crash without it · 12:10 PM ET</div></div></div>
+<div class="msg planner"><span class="av">P</span><div class="bub"><div class="who">The planner <span>Claude</span><span class="staged">voiced by Claude</span></div>For the record: the skeptic checked the memory-and-story commit and the status-line commit, and believed both. The page commit wasn&#x27;t put through Bite this shift. Its tests open a real browser, and a full Bite run of them takes longer than the shift had.<div class="meta">12:11 PM ET</div></div></div>
+<div class="msg playtester"><span class="av">P</span><div class="bub"><div class="who">The playtester <span>Claude, looking at the page</span><span class="staged">voiced by Claude</span></div>Adopted #7, called it Pebble, closed the page, came back a day later on the clock. &#x27;While you were away: Pebble had 2 babies and ran from prowlers once, then starved. Its oldest child, #22, carries on as Pebble II.&#x27; I was weirdly sad about it. That&#x27;s the point. Gripe: on a phone the name tag gets small, and in prowler season your line can go through five heirs in a week, which reads a bit grim.<div class="meta">12:11 PM ET</div></div></div></div>
+<div class="note">Every robot line here is Claude, voicing that robot, except the skeptic's verdicts on commits, which are Bite's real results. The island: <a href='https://claude.ai/artifact/Jh4FT9zhx7Ys8xDMpbVbDT'>Driftwood Island</a>.</div>
+</main>
+<script>
+const ms=[...document.querySelectorAll('.msg')];let timers=[];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.getElementById('all').onclick=()=>{timers.forEach(clearTimeout);ms.forEach(m=>m.classList.remove('off'))};
+document.getElementById('play').onclick=()=>{timers.forEach(clearTimeout);ms.forEach(m=>m.classList.add('off'));
+timers=ms.map((m,i)=>setTimeout(()=>{m.classList.remove('off');m.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'})},400+i*1600));};
+</script>

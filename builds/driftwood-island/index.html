@@ -32,6 +32,14 @@ background:rgba(140,200,255,.92);color:#06223a;padding:3px 8px;border-radius:4px
 #kinds li .when{grid-column:2}
 #kinds .dot{border-radius:50%;border:1px solid var(--rule);justify-self:center}
 #kinds li.gone{opacity:.55}
+[hidden]{display:none!important}
+#pet{display:grid;gap:10px}
+.pet-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}.pet-head h2{margin:0}
+h3{font:400 1.05rem var(--display);margin:4px 0 6px}
+#adopt-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#adopt-form input{font:inherit;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);margin-left:6px}
+pre{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font:.75rem var(--mono);margin:6px 0}
+details summary{cursor:pointer;font-size:.9rem}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 button{font:500 .85rem var(--body);background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:8px 16px;cursor:pointer}
 button:hover{border-color:var(--dim)}button:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
@@ -78,6 +86,33 @@ li{display:grid;gap:1px}
     </span>
     <p class="small">Island time is UTC-5 all year. The island moves every ten minutes; leave it open and watch.</p>
   </div>
+  <section id="pet" aria-live="polite">
+    <div id="pet-none">
+      <h2>Adopt a grazer</h2>
+      <p class="small">Click any grazer on the map to adopt it, or let the island pick one. It's kept in this browser only; the island stays the same for everyone. Come back later to find out what happened to it.</p>
+      <button id="adopt-random" type="button">Pick one for me</button>
+    </div>
+    <div id="pet-card" hidden>
+      <div class="pet-head"><h2 id="pet-name">Pebble</h2><span id="pet-line" class="when"></span></div>
+      <div class="bar">
+        <button id="mine" type="button" aria-pressed="false">Follow mine</button>
+        <button id="release" type="button">Let go</button>
+      </div>
+      <div id="away" hidden><h3 id="away-title">While you were away</h3><ol id="away-list"></ol></div>
+      <details>
+        <summary>Keep it in Claude Code's status line</summary>
+        <p class="small">With the trust-issues repo on your computer and Node installed, adopt the same grazer there:</p>
+        <pre><code>node builds/driftwood-island/tools/pet.mjs adopt <span id="cli-id">0</span> "<span id="cli-name">Pebble</span>"</code></pre>
+        <p class="small">Then add this to Claude Code's settings file (<code>~/.claude/settings.json</code>), with the full path to the repo:</p>
+        <pre><code>"statusLine": { "type": "command", "command": "node /path/to/trust-issues/builds/driftwood-island/tools/pet.mjs" }</code></pre>
+      </details>
+    </div>
+    <form id="adopt-form" hidden>
+      <label>Name your grazer <input id="adopt-name" maxlength="24" autocomplete="off"></label>
+      <button type="submit">Adopt #<span id="adopt-id"></span></button>
+      <button type="button" id="adopt-cancel">Cancel</button>
+    </form>
+  </section>
   <div class="cols">
     <section>
       <h2>What happened</h2>

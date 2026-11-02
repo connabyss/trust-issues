@@ -40,12 +40,12 @@ export const LANDING = (() => {
 })();
 
 export function makeState() {
-  return { tick: -1, grass: new Float32Array(W * H), grazers: [], nextId: 1, history: [], marks: {}, starvedToday: 0,
+  return { tick: -1, grass: new Float32Array(W * H), grazers: [], nextId: 1, history: [], marks: {}, starvedToday: 0, died: [],
     kinds: [], evo: false, prowlers: [], eatenToday: 0 };
 }
 
 export function cloneState(s) {
-  return { ...s, grass: Float32Array.from(s.grass), grazers: s.grazers.map((g) => ({ ...g })), history: [...s.history],
+  return { ...s, grass: Float32Array.from(s.grass), grazers: s.grazers.map((g) => ({ ...g })), history: [...s.history], died: (s.died || []).map((d) => ({ ...d })),
     marks: { ...s.marks }, kinds: s.kinds.map((k) => ({ ...k })),
     prowlers: s.prowlers.map((p) => ({ ...p })) };
 }
@@ -117,14 +117,14 @@ function grazers(s, tick) {
     if (z.energy > 1.4 && z.age > 2 * DAY && s.grazers.length + babies.length < MAX_GRAZERS && rng() < 0.006) {
       z.energy -= 0.8;
       const spot = around(z.at).filter(walkable);
-      babies.push({ id: s.nextId++, at: spot.length ? spot[Math.floor(rng() * spot.length)] : z.at, energy: 0.8, age: 0, born: tick });
+      babies.push({ id: s.nextId++, at: spot.length ? spot[Math.floor(rng() * spot.length)] : z.at, energy: 0.8, age: 0, born: tick, mom: z.id });
       if (!s.marks.firstBirth) { s.marks.firstBirth = true; say(s, "The first grazer was born on the island."); }
     }
   }
   const before = s.grazers.length;
   s.grazers = s.grazers.filter((z) => {
-    if (z.energy <= 0) { s.starvedToday++; return false; }
-    if (z.age > 20 * DAY) return false; // old age
+    if (z.energy <= 0) { s.starvedToday++; s.died.push({ id: z.id, why: "starved", at: z.at }); return false; }
+    if (z.age > 20 * DAY) { s.died.push({ id: z.id, why: "old age", at: z.at }); return false; }
     return true;
   }).concat(babies);
   for (const n of [10, 25, 50, 100, 200, 400]) {
@@ -226,7 +226,7 @@ function evolvedGrazers(s, tick) {
       z.energy -= 0.7;
       const spot = around(z.at).filter(walkable), bg = mutate(g, rng, 0.2);
       const baby = { id: s.nextId++, at: spot.length ? spot[Math.floor(rng() * spot.length)] : z.at, energy: 0.6 + 0.3 * g.size,
-        age: 0, born: tick, g: bg, kind: z.kind };
+        age: 0, born: tick, g: bg, kind: z.kind, mom: z.id };
       const mine = kinds.get(z.kind);
       if (distance(bg, mine.g) > SPLIT) {
         // Too different from its own kind. If a living kind is close, it belongs to that one; if not, it starts one.
@@ -242,8 +242,10 @@ function evolvedGrazers(s, tick) {
   }
   const before = s.grazers.length;
   s.grazers = s.grazers.filter((z) => {
-    if (z.energy <= 0) { s.starvedToday++; return false; }
-    return z.age <= (14 + 6 * z.g.size) * DAY; // old age: big ones live longer
+    if (z.energy <= 0) { s.starvedToday++; s.died.push({ id: z.id, why: "starved", at: z.at }); return false; }
+    if (z.age <= (14 + 6 * z.g.size) * DAY) return true;
+    s.died.push({ id: z.id, why: "old age", at: z.at }); // big ones live longer
+    return false;
   }).concat(babies);
   for (const k of s.kinds) k.count = 0;
   for (const z of s.grazers) kinds.get(z.kind).count++;
@@ -350,6 +352,7 @@ function prowlers(s, tick) {
       }
       if (p.at === target.at && rng() < catchChance(p.g, target.g, crowd(target.at))) {
         eaten.add(target);
+        s.died.push({ id: target.id, why: "caught", at: target.at, by: p.id });
         p.energy = Math.min(3, p.energy + 1.2);
         s.eatenToday++;
         if (!s.marks.firstKill) {
@@ -397,6 +400,7 @@ const RUN = { grass, grazers, evolution, dew, prowlers };
 // `extra` lets a test plug in a rule that isn't part of the island (to prove a later rule can't touch the past).
 export function step(s, rules = RULES, extra = {}) {
   s.tick++;
+  s.died = []; // who died this tick, and how (kept for the story of one grazer; not part of the island's fingerprint)
   if (s.tick === 0) say(s, "The island rose from the sea: sand, soil and rock, and nothing living.");
   for (const r of rules) if (s.tick >= r.since) (RUN[r.id] || extra[r.id])(s, s.tick);
   return s;

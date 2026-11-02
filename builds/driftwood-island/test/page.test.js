@@ -9,7 +9,8 @@ import { tmpdir } from "node:os";
 import { join, extname } from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { runTo } from "../src/sim.js";
+import { runTo, DAY } from "../src/sim.js";
+import { storyOf, summary } from "../src/story.js";
 import { tickAt } from "../src/clock.js";
 
 let chromium = null;
@@ -113,6 +114,50 @@ test("fast-forward shows the week ahead, kinds splitting off, then comes back to
     assert.equal(await page.locator("#kinds li").count(), 1);
     assert.ok(!(await page.isVisible(".preview-tag")));
   });
+});
+
+test("adopt a grazer by clicking it, name it, and the page follows it and remembers it", { skip, timeout: 60000 }, async () => {
+  await open(new URL("..", import.meta.url).pathname, async (page) => {
+    assert.ok(await page.isVisible("#pet-none"));
+    await page.clock.runFor(500);
+    const target = await page.evaluate(() => {
+      const c = document.getElementById("isle"), r = c.getBoundingClientRect(), k = r.width / c.width;
+      const d = window.__island.drawn.find((x) => !x.prowler && x.sx > 40 && x.sy > 40 && x.sx < c.width - 40 && x.sy < c.height - 40);
+      return { id: d.id, x: r.left + d.sx * k, y: r.top + d.sy * k };
+    });
+    await page.mouse.move(target.x, target.y);
+    await page.mouse.click(target.x, target.y);
+    assert.ok(await page.isVisible("#adopt-form"));
+    assert.equal(await page.textContent("#adopt-id"), String(target.id));
+    await page.fill("#adopt-name", "Pebble");
+    await page.click('#adopt-form button[type="submit"]');
+    assert.ok(await page.isVisible("#pet-card"));
+    assert.equal(await page.textContent("#pet-name"), "Pebble");
+    assert.match(await page.textContent("#pet-line"), new RegExp(`^#${target.id} · `));
+    assert.equal(await page.getAttribute("#mine", "aria-pressed"), "true");
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("driftwood-pet")));
+    assert.equal(saved.id, target.id);
+    assert.equal(saved.name, "Pebble");
+  });
+});
+
+test("coming back: 'while you were away' tells your grazer's last day, the same story the rules give", { skip, timeout: 60000 }, async () => {
+  const seen = tickAt(NOON) - DAY, s = runTo(seen);
+  const me = s.grazers.reduce((a, b) => (b.age > a.age ? b : a));
+  const expected = summary(storyOf(me.id, "Moss", seen, tickAt(NOON)));
+  const server = await serve(new URL("..", import.meta.url).pathname), browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await page.addInitScript((pet) => localStorage.setItem("driftwood-pet", JSON.stringify(pet)), { id: me.id, name: "Moss", since: seen, seen });
+    await page.clock.install({ time: NOON });
+    await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    await page.waitForFunction(() => document.getElementById("clock").textContent.startsWith("Day 7"));
+    assert.ok(await page.isVisible("#away"));
+    const shown = await page.$$eval("#away-list li", (lis) => lis.map((li) => li.lastChild.textContent));
+    assert.deepEqual(shown, expected.map((e) => e.text));
+    const after = await page.evaluate(() => JSON.parse(localStorage.getItem("driftwood-pet")));
+    assert.equal(after.seen, tickAt(NOON));
+  } finally { await browser.close(); server.close(); }
 });
 
 test("the one-file version works on its own", { skip, timeout: 60000 }, async () => {

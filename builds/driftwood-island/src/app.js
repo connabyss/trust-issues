@@ -3,11 +3,13 @@ import { tickAt, msAt, label, sunAt, TICKS_PER_DAY } from "./clock.js";
 import { RULES, makeState, step, runTo, cloneState, island, light } from "./sim.js";
 import { W, H, SEA, SAND, SOIL, ROCK } from "./island.js";
 import { coatColour, awakeAt } from "./genes.js";
+import { storyOf, summary, familyOf } from "./story.js";
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("isle"), ctx = canvas.getContext("2d");
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let live = null, prev = null, hopStart = 0, replay = null, hover = null, whole = false, hunt = false, followed = null;
+let pet = null, mine = false; // your grazer (kept in this browser only), and whether the camera follows it
 const FF_DAYS = 7;
 const view = { x: W / 2, y: H / 2, s: 0 }; // what the camera looks at, in tiles, and screen pixels per tile
 let drawn = []; // where each grazer was drawn this frame, for hovering
@@ -45,6 +47,8 @@ function skyTint(tick) {
 // The camera frames the herd (or the whole island when there's no herd, or when asked) and drifts there slowly.
 function aim(state) {
   const cw = canvas.width, ch = canvas.height, all = { x: W / 2, y: H / 2, s: Math.min(cw / W, ch / H) };
+  const yours = mine && pet && state.grazers.find((z) => z.id === pet.id);
+  if (yours) return { x: (yours.at % W) + 0.5, y: Math.floor(yours.at / W) + 0.5, s: all.s * 3.2 };
   if (hunt && state.prowlers.length) {
     // Follow one prowler, sticking with it while it lives; prefer one that's chasing.
     let p = state.prowlers.find((q) => q.id === followed);
@@ -222,13 +226,14 @@ function draw(state, prevState, f, now) {
   const placed = state.grazers.map((z) => ({ z, up: isUp(z, alt) }))
     .map(({ z, up }) => ({ z, up, p: placeOf(z, lastAt.has(z.id) ? lastAt.get(z.id) : z.at, now, up, f) }));
   placed.sort((a, b) => a.p.y - b.p.y);
-  const eyes = [];
+  const eyes = [], tags = [];
   for (const { z, p, up } of placed) {
     const sx = X(p.x), sy = Y(p.y);
     if (sx < -40 || sy < -40 || sx > cw + 40 || sy > ch + 40) continue;
     drawGrazer(z, p, sx, sy, u, up);
     if (up && alt < -3) eyes.push([sx + (p.dir >= 0 ? 1 : -1) * u * 0.8, sy - u * 0.3]);
     drawn.push({ z, sx, sy, r: u });
+    if (pet && pet.id === z.id) tags.push([sx, sy - u * 1.3, pet.name]);
     if (hover && hover.id === z.id) {
       ctx.strokeStyle = "#fff6d8"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(sx, sy, u * 1.4, 0, Math.PI * 2); ctx.stroke();
@@ -283,6 +288,17 @@ function draw(state, prevState, f, now) {
   for (const [ex, ey, hunter] of eyes) {
     ctx.fillStyle = hunter ? "rgba(255,120,60,0.95)" : "rgba(255,236,150,0.95)";
     ctx.beginPath(); ctx.arc(ex, ey, Math.max(1.3, u * (hunter ? 0.12 : 0.09)), 0, Math.PI * 2); ctx.fill();
+  }
+  // Your grazer's name tag, above everything.
+  for (const [tx, ty, name] of tags) {
+    ctx.font = `600 ${Math.round(Math.max(11, Math.min(16, u * 0.7)) * (devicePixelRatio > 1 ? 1.6 : 1))}px Figtree, system-ui, sans-serif`;
+    const w = ctx.measureText(name).width + 14, h = parseInt(ctx.font.match(/(\d+)px/)[1], 10) + 8;
+    ctx.fillStyle = "rgba(255,248,226,0.95)";
+    ctx.beginPath(); ctx.roundRect(tx - w / 2, ty - h, w, h, h / 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx - 5, ty); ctx.lineTo(tx + 5, ty); ctx.lineTo(tx, ty + 6); ctx.fill();
+    ctx.fillStyle = "#2a2118"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(name, tx, ty - h / 2 + 1);
+    ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
   }
   if (alt < -6) {
     // Stars over the water, and fireflies drifting over the grass.
@@ -439,11 +455,13 @@ function frame(now) {
     }
   }
   catchUp();
+  watchPet();
   shown = live;
   draw(live, prev, (now - hopStart) / 2500, now);
   describe(live);
   writeHistory(live);
   writeKinds(live);
+  writePet(live);
   requestAnimationFrame(frame);
 }
 
@@ -476,6 +494,7 @@ $("replay").addEventListener("click", () => play("replay"));
 $("ff").addEventListener("click", () => play("ff"));
 $("hunt").addEventListener("click", () => {
   hunt = !hunt;
+  if (hunt && mine) $("mine").click();
   followed = null;
   if (hunt && whole) $("whole").click();
   $("hunt").setAttribute("aria-pressed", String(hunt));
@@ -483,15 +502,131 @@ $("hunt").addEventListener("click", () => {
 });
 $("whole").addEventListener("click", () => {
   if (!whole && hunt) $("hunt").click();
+  if (!whole && mine) $("mine").click();
   whole = !whole;
   $("whole").setAttribute("aria-pressed", String(whole));
   $("whole").textContent = whole ? "Follow the herd" : "Whole island";
+});
+
+// ---- your grazer ----
+// Adopting lives only in this browser (localStorage); the island itself is the same for everyone.
+const PET_KEY = "driftwood-pet";
+const NAMES = ["Pebble", "Moss", "Clover", "Biscuit", "Juniper", "Pip", "Fennel", "Bramble", "Toast", "Sorrel", "Wren",
+  "Mochi", "Nettle", "Thistle", "Bean", "Barley", "Puddle", "Sprout", "Driftwood", "Salt"];
+function loadPet() { try { return JSON.parse(localStorage.getItem(PET_KEY)) || null; } catch { return null; } }
+function savePet() { try { pet ? localStorage.setItem(PET_KEY, JSON.stringify(pet)) : localStorage.removeItem(PET_KEY); } catch { /* fine */ } }
+
+function mood(z, state) {
+  if (z.fleeing) return "running from a prowler";
+  if (!awakeAt(z.g || PLAIN, Math.round(sunAt(state.tick) * 10) / 10)) return "asleep";
+  if (z.energy < 0.3) return "starving";
+  return state.grass[z.at] > 0.45 ? "grazing" : "looking for grass";
+}
+
+function writePet(state) {
+  $("pet-none").hidden = !!(pet && !pet.ended);
+  $("pet-card").hidden = !pet;
+  if (!pet) return;
+  $("pet-name").textContent = pet.name;
+  const z = state.grazers.find((g) => g.id === pet.id);
+  if (!z) { $("pet-line").textContent = pet.ended ? "Its line has ended." : "Not on the island at this moment."; return; }
+  const kind = z.kind && state.kinds[z.kind - 1], days = Math.floor(z.age / TICKS_PER_DAY);
+  const kids = state.grazers.filter((g) => g.mom === z.id).length;
+  $("pet-line").textContent = [`#${z.id}`, kind && kind.named ? `a ${kind.name}` : "a grazer", `${days} ${days === 1 ? "day" : "days"} old`,
+    mood(z, state), `${kids} ${kids === 1 ? "child" : "children"} alive`].join(" · ");
+  $("cli-id").textContent = String(z.id);
+  $("cli-name").textContent = pet.name;
+}
+
+function showAway(lines, title = "While you were away") {
+  const list = $("away-list");
+  list.textContent = "";
+  for (const l of lines) {
+    const li = document.createElement("li"), t = document.createElement("span");
+    t.className = "when"; t.textContent = l.when;
+    li.append(t, document.createTextNode(l.text));
+    list.append(li);
+  }
+  $("away-title").textContent = title;
+  $("away").hidden = lines.length === 0;
+}
+
+function adopt(id, name) {
+  pet = { id, name: name || NAMES[id % NAMES.length], since: live.tick, seen: live.tick, family: [...familyOf(live, id)] };
+  savePet();
+  showAway([]);
+  if (!mine) $("mine").click();
+  writePet(live);
+}
+
+// Catch up on your grazer's life since you last looked, and take over its heir if it died.
+function recap() {
+  if (!pet || pet.ended || pet.seen >= live.tick) return;
+  const told = storyOf(pet.id, pet.name, pet.seen, live.tick, { family: pet.family, generation: pet.generation });
+  if (told.events.length) showAway(summary(told));
+  keep(told);
+}
+
+// While the page is open: move your grazer's story on with each tick (the same story the recap and the status-line
+// command tell), so if it dies you see it, and its heir takes over on the spot.
+function watchPet() {
+  if (!pet || pet.ended || replay || pet.seen >= live.tick) return;
+  if (pet.seen !== prev.tick) { recap(); return; }
+  const told = storyOf(pet.id, pet.name, prev.tick, live.tick, { start: cloneState(prev), family: pet.family, generation: pet.generation });
+  if (told.events.some((e) => e.what === "death")) showAway(summary(told).filter((l) => l.when !== "now"), "Just now");
+  keep(told);
+}
+
+function keep(told) {
+  Object.assign(pet, { id: told.id, name: told.name, family: told.family, generation: told.generation, seen: live.tick });
+  if (!told.alive) pet.ended = true;
+  if (mine) $("mine").textContent = "Follow the herd";
+  savePet();
+}
+
+let picking = null;
+canvas.addEventListener("click", () => {
+  if (!hover || replay) return;
+  const d = drawn.find((x) => x.z.id === hover.id);
+  if (!d || d.prowler) return;
+  picking = d.z.id;
+  $("adopt-id").textContent = String(picking);
+  $("adopt-name").value = NAMES[picking % NAMES.length];
+  $("adopt-form").hidden = false;
+  $("adopt-name").focus();
+});
+$("adopt-form").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  if (picking !== null && live.grazers.some((z) => z.id === picking)) adopt(picking, $("adopt-name").value.trim().slice(0, 24));
+  $("adopt-form").hidden = true;
+  picking = null;
+});
+$("adopt-cancel").addEventListener("click", () => { $("adopt-form").hidden = true; picking = null; });
+$("adopt-random").addEventListener("click", () => {
+  if (!live.grazers.length) return;
+  const z = live.grazers[Math.floor(Math.random() * live.grazers.length)];
+  adopt(z.id);
+});
+$("mine").addEventListener("click", () => {
+  mine = !mine;
+  if (mine && hunt) $("hunt").click();
+  if (mine && whole) $("whole").click();
+  $("mine").setAttribute("aria-pressed", String(mine));
+  $("mine").textContent = mine ? "Follow the herd" : `Follow ${pet ? pet.name : "mine"}`;
+});
+$("release").addEventListener("click", () => {
+  pet = null; savePet(); if (mine) $("mine").click(); showAway([]); writePet(live);
 });
 
 resize();
 writeRules();
 catchUp();
 writeHistory(live);
+pet = loadPet();
+recap();
+writePet(live);
+if (pet && !pet.ended) $("mine").click();
 requestAnimationFrame(frame);
 window.__island = { get live() { return live; }, get shown() { return shown; }, get view() { return { ...view }; },
-  get drawn() { return drawn.map((d) => ({ id: d.z.id, prowler: !!d.prowler })); }, light };
+  get drawn() { return drawn.map((d) => ({ id: d.z.id, prowler: !!d.prowler, sx: d.sx, sy: d.sy })); },
+  get pet() { return pet && { ...pet }; }, light };

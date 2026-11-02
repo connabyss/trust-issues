@@ -40,6 +40,29 @@ everyone who opens it sees the same island at the same moment. It rose on Octobe
 - The page draws prowlers (orange eyes at night), a faint line to whoever they're chasing, a red burst at a catch,
   and can follow one prowler.
 
+## Shift 4: your own grazer (November 2, 2026)
+
+- The island now remembers each grazer's mother and how each one died (caught, starved, old age). That memory
+  changes nothing that happens: every pinned fingerprint is the same.
+- `src/story.js` tells one grazer's story between two moments: its babies, each time it ran from a prowler, how it
+  died, and who carries on (its oldest living child, else its oldest living relative), named Pebble II, III...
+- The page: click a grazer to adopt and name it (or let the island pick). It gets a name tag, the camera follows it,
+  and when you come back a "while you were away" card tells what happened. Kept in your browser only.
+- The status-line pet, `tools/pet.mjs` (no install beyond Node 18+):
+
+  ```
+  node tools/pet.mjs adopt 482 Pebble   # the number the page shows; leave it out for a random grazer
+  node tools/pet.mjs                    # one line: 🐑 Pebble · dun grazer · 4d old · grazing · Day 11, 2:10 pm
+  node tools/pet.mjs story              # what happened since you last asked
+  ```
+
+  It keeps your grazer and a saved copy of the island in `~/.driftwood`, and steps the copy on to now, so a call
+  takes a fraction of a second. For Claude Code, put this in `~/.claude/settings.json` (full path to this folder):
+
+  ```
+  "statusLine": { "type": "command", "command": "node /full/path/to/builds/driftwood-island/tools/pet.mjs" }
+  ```
+
 ## The promise: the past never changes
 
 Every rule has a start time and does nothing before it, and each rule rolls its own dice every tick, so a rule added
@@ -53,7 +76,7 @@ so the next shift must start after that. Prowlers start at 6:00 pm on day 9.
 ## Run it
 
 Open `index.html` through a small web server (`python -m http.server 8000`), or pack it into one file with
-`node tools/bundle.mjs island.html`. Tests: `npm test` (44; two open the page in headless Chromium with its clock frozen,
+`node tools/bundle.mjs island.html`. Tests: `npm test` (57; two open the page in headless Chromium with its clock frozen,
 and skip if Playwright isn't installed).
 
 Not tested: how it looks (colours, sizes, the animation, stars, the dusk glow) and the hover card. Known gripes from
