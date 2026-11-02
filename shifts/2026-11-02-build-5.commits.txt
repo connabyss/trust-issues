@@ -1,0 +1,7 @@
+001b1d9 Planner (Claude): Empty project: Living island
+4f19a2a Builder (Claude): The clock: island time, ten-minute ticks, and the real sun
+a277fb3 Builder (Claude): The island: one fixed shape of sand, soil and rock
+7e76618 Builder (Claude): Grass and grazers: the two rules of shift 1, each with a start time
+3f2ac77 Builder (Claude): Pin the island's past: fingerprints, and a later rule can't touch it
+fa529f8 Builder (Claude): The page: the island live, a 24-hour replay, its history and its rules
+4352e4d Builder (Claude): README: what the island is, the promise about its past, and what isn't tested

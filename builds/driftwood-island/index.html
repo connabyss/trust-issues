@@ -1,0 +1,72 @@
+<title>Driftwood Island</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;600&family=Martian+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a field journal. The island is the big picture at the top; the log of what happened runs beneath it. */
+:root{color-scheme:light;--paper:#f2ecdf;--ink:#2b2a24;--dim:#706a5c;--rule:#d8cfbd;--sea:#2f6b8f;--leaf:#4a8c3e;--card:#fbf8f1;
+--display:"Young Serif",Georgia,serif;--body:Figtree,system-ui,sans-serif;--mono:"Martian Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15181a;--ink:#ece6d8;--dim:#a39c8c;--rule:#2e3330;
+--sea:#7fb6d6;--leaf:#8fc979;--card:#1c2022;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#15181a;--ink:#ece6d8;--dim:#a39c8c;--rule:#2e3330;--sea:#7fb6d6;--leaf:#8fc979;--card:#1c2022;color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font:16px/1.55 var(--body)}
+main{max-width:1000px;margin:0 auto;padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));
+padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+h1{font:400 clamp(2rem,6vw,3.2rem)/1 var(--display);margin:0;text-wrap:balance}
+.lede{margin:6px 0 0;color:var(--dim);max-width:62ch}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;font:500 .8rem var(--mono);align-items:baseline}
+.stats b{font:400 1.35rem var(--display);color:var(--ink);margin-right:4px;font-variant-numeric:tabular-nums}
+.stats span{color:var(--dim)}
+#clockbox b{color:var(--sea)}
+.frame{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--rule);background:#173a52}
+#isle{display:block;width:100%;height:auto;image-rendering:pixelated;cursor:crosshair}
+#tip{position:absolute;pointer-events:none;background:rgba(20,18,14,.85);color:#f6ecd8;font:.75rem var(--mono);padding:4px 8px;border-radius:4px;white-space:nowrap}
+.replay-tag{position:absolute;top:10px;left:10px;font:500 .72rem var(--mono);letter-spacing:.1em;text-transform:uppercase;
+background:rgba(255,140,60,.9);color:#2b1606;padding:3px 8px;border-radius:4px;display:none}
+.replaying .replay-tag{display:block}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:500 .85rem var(--body);background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:8px 16px;cursor:pointer}
+button:hover{border-color:var(--dim)}button:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
+button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.small{font-size:.85rem;color:var(--dim);margin:0}
+.cols{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px}
+@media (max-width:720px){.cols{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;min-width:0}
+h2{font:400 1.25rem var(--display);margin:0 0 8px}
+ol,ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+#history{max-height:420px;overflow-y:auto}
+li{display:grid;gap:1px}
+.when{font:500 .7rem var(--mono);color:var(--dim);letter-spacing:.03em}
+</style>
+<main>
+  <header>
+    <h1>Driftwood Island</h1>
+    <p class="lede">A small island that is always running. Grass spreads in the real daylight, grazers eat, sleep, raise young and sometimes starve. Everyone who opens this page sees the same island at the same moment.</p>
+  </header>
+  <div class="stats" aria-live="polite">
+    <div id="clockbox"><b id="clock">Day 0</b><span id="phase">night</span></div>
+    <div><b id="count">0</b><span>grazers</span></div>
+    <div><b id="green">0%</b><span>of the soil green</span></div>
+    <div><span>next tick in</span> <b id="next">10:00</b></div>
+  </div>
+  <div class="frame">
+    <canvas id="isle" aria-label="The island seen from above. Hover a grazer to meet it."></canvas>
+    <span class="replay-tag">Replaying the last 24 hours</span>
+    <div id="tip" hidden></div>
+  </div>
+  <div class="bar">
+    <button id="replay" type="button" aria-pressed="false">Replay the last 24 hours</button>
+    <p class="small">Island time is UTC-5 all year. The island moves every ten minutes; leave it open and watch.</p>
+  </div>
+  <div class="cols">
+    <section>
+      <h2>What happened</h2>
+      <ol id="history"></ol>
+    </section>
+    <section>
+      <h2>The rules, and when each began</h2>
+      <ul id="rules"></ul>
+      <p class="small" style="margin-top:12px">There's no server. Your browser works the island out from the real clock, starting from the day it rose (October 26, 2026). The days before this page existed were worked out backwards from the same rules. New rules only ever start in the future, so the past never changes.</p>
+    </section>
+  </div>
+</main>
+<script type="module" src="./src/app.js"></script>
