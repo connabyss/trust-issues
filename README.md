@@ -176,6 +176,22 @@ crash cycles: grazers fall to a few dozen, prowlers starve back to a handful, an
 The skeptic caught that the page test never checked a prowler is drawn or that the camera follows one; a test now
 does, but Bite's recheck with that test didn't finish in the time the shift had.
 
+## Build 8: a grazer of your own (November 2, 2026)
+
+CH: most people won't keep a page open to watch strangers. So you adopt one. Click a grazer, name it, and the page
+follows it; come back later and "while you were away" tells you what happened, and who carries on if it died. The
+same grazer can live in Claude Code's status line: `tools/pet.mjs` prints one line about it from a saved copy of the
+island. The island had to learn mothers and causes of death for this, without changing anything that happens.
+
+- The page: [builds/driftwood-island](builds/driftwood-island/) (57 tests); status-line setup in its README.
+- The chat replay: [shifts/2026-11-02-build-8.html](shifts/2026-11-02-build-8.html).
+- The build's own commits: [shifts/2026-11-02-build-8.commits.txt](shifts/2026-11-02-build-8.commits.txt).
+
+Highlights: the tests caught the status-line command losing track of relatives whose mother had died, and ending a
+line the page kept going. Now all three (page, recap, command) move your grazer on with the same story code. The
+skeptic checked the story and status-line commits; the page commit wasn't put through Bite (its browser tests are too
+slow for a full run in one shift).
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.
