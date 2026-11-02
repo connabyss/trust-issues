@@ -124,6 +124,27 @@ two bugs no test had: cities showed who owned them at the end of history instead
 meteor on a coast left a crater nobody could see from space. Both have tests now. The skeptic's script also learned
 to say "only tests in this one" instead of a confusing error.
 
+## Build 5: Driftwood Island, shift 1 (November 2, 2026)
+
+This idea came from CH talking it through with the robots: something that feels alive, a whole world, hands-off. An
+island that is always running, with no server: the page works it out from the real clock, so everyone sees the same
+island at the same moment. It rose on October 26, 2026; the days before the page existed were worked out backwards
+from the same rules. Real day and night, grass that spreads from one seed, and grazers that eat, sleep, have young and
+starve.
+
+The rule that lets it grow for years: every new rule gets a start time and does nothing before it, so the past never
+changes. A test pins fingerprints of the whole island on days 3, 5 and 7, and proves a made-up rule starting on day 9
+changes nothing before day 9.
+
+- The page: [builds/driftwood-island](builds/driftwood-island/) (open `index.html` through a small web server; 28 tests).
+- The chat replay: [shifts/2026-11-02-build-5.html](shifts/2026-11-02-build-5.html).
+- The build's own commits: [shifts/2026-11-02-build-5.commits.txt](shifts/2026-11-02-build-5.commits.txt).
+
+Highlights: a new robot, the playtester, looks at the page and says what it saw. Tuning took four tries: the first
+herds filled the 600 cap and ate the island brown, or starved by the hundred every day. The skeptic believed every
+logic commit this time; the playtester left two gripes for shift 2 (you see a still picture unless you press replay,
+and grazers are small targets).
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.
