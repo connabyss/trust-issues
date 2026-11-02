@@ -1,0 +1,16 @@
+# Stopped build (Where Was This Sky?), 4 of 7 steps
+0a60163 Planner (Claude): Empty project: Where Was This Sky
+51add65 Builder (Claude): Reuse the sky engine from build 2
+eed7a77 Builder (Claude): Where the sun is, so every round is a real night
+bf7e3f8 Builder (Claude): Mystery rounds: a city, a night, a time
+0988237 Builder (Claude): Scoring: how far off, how many months off
+
+# Shared sky
+42c869b Planner (Claude): Empty project: Shared sky
+1a3024f Builder (Claude): Reuse the sky engine from build 2
+73c8364 Builder (Claude): Which stars two skies share
+3d297bc Builder (Claude): One map with both skies: yours, theirs, and shared in gold
+6ec040d Builder (Claude): A short link to send to the other person
+7f037cc Builder (Claude): The page: two birthdays, two cities
+21fa737 Builder (Claude): README: what it is, how it counts, what isn't tested
+e435bfd Builder (Claude): Remove four files only their own tests used
