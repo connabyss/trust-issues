@@ -1,0 +1,111 @@
+<title>Worldseed</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@1,6..96,500;1,6..96,700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the planet owns the screen; a chronicle runs down the right like the margin of an old history book. */
+:root{color-scheme:dark;--space:#05070c;--ink:#ece3cc;--dim:#9c9686;--line:#2a2b30;--panel:rgba(14,15,20,.82);
+--ember:#ffcf7a;--warn:#ff8a5c;
+--display:"Bodoni Moda",Didot,"Times New Roman",serif;--body:Spectral,Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+html,body{height:100%}
+body{background:var(--space);color:var(--ink);font:16px/1.5 var(--body);overflow:hidden}
+#sky{position:fixed;inset:0;z-index:0}
+.app{position:relative;z-index:1;height:100%;display:grid;grid-template-columns:minmax(0,1fr) min(400px,36vw);grid-template-rows:minmax(0,1fr);
+padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));gap:16px}
+.main{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-width:0;padding-block:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px}
+h1{font:italic 700 clamp(1.9rem,4vw,2.8rem)/1 var(--display);margin:0;letter-spacing:-.01em}
+.tag{color:var(--dim);font-size:.95rem;margin:0}
+form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;width:100%}
+label.lbl{font:500 .7rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);align-self:center}
+input[type=text]{font:500 1rem var(--mono);background:rgba(255,255,255,.05);color:var(--ink);border:1px solid var(--line);
+border-radius:6px;padding:7px 10px;min-width:0;width:16ch}
+button,select{font:500 .85rem var(--mono);background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--line);
+border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--dim)}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+button[aria-pressed=true]#meteor{background:var(--warn);color:#1a0d06;border-color:var(--warn)}
+#stage{position:relative;display:grid;place-items:center;min-height:0;touch-action:none}
+#stage canvas{grid-area:1/1;max-width:100%}
+#stage.aiming #marks{cursor:crosshair}
+#marks{cursor:grab}
+#status{position:absolute;inset:auto 0 12%;text-align:center;font:italic 1.1rem var(--body);color:var(--ember)}
+.bar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding-top:6px}
+#year{font:italic 600 clamp(1.3rem,3vw,1.9rem)/1 var(--display);font-variant-numeric:tabular-nums;min-width:7.5ch;text-align:right}
+input[type=range]{width:100%;accent-color:var(--ember)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1;align-items:center}
+#stats{font:.8rem var(--mono);color:var(--dim);margin-left:auto}
+aside{min-width:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;padding-block:16px;gap:10px}
+aside h2{font:500 .72rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0}
+#peoples{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+#peoples li{font:.78rem var(--mono);border:1px solid var(--line);border-radius:99px;padding:2px 9px 2px 7px;
+display:flex;align-items:center;gap:6px;background:var(--panel)}
+#peoples li::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--pc)}
+#peoples li.more::before{display:none}
+#peoples small{color:var(--dim)}
+.book{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:8px;background:var(--panel);border:1px solid var(--line);
+border-radius:10px;padding:12px 4px 0 14px}
+#log{list-style:none;margin:0;padding:0 10px 12px 0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.ev-body{all:unset;display:block;width:100%;box-sizing:border-box;padding:7px 8px 7px 12px;border-left:3px solid var(--pc,var(--line));
+border-radius:2px;cursor:default}
+button.ev-body{cursor:pointer}button.ev-body:hover{background:rgba(255,255,255,.05)}
+button.ev-body:focus-visible{outline:2px solid var(--ember)}
+.ev-head{display:block;font:500 .68rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.ev-text{display:block;font-size:.98rem}
+.ev.minor .ev-text{font-size:.86rem;color:var(--dim)}
+.ev-war .ev-head,.ev-fell .ev-head,.ev-end .ev-head{color:var(--warn)}
+.ev-meteor .ev-body{border-left-color:var(--warn);background:rgba(255,138,92,.1)}
+.ev-golden .ev-head{color:var(--ember)}
+.ev{animation:in .5s ease-out}
+@keyframes in{from{opacity:.2;transform:translateY(-4px)}to{opacity:1}}
+.note{font-size:.78rem;color:var(--dim);margin:0}
+@media (prefers-reduced-motion:reduce){.ev{animation:none}}
+@media (max-width:760px){
+body{overflow:auto}
+.app{display:block;height:auto}
+.main{grid-template-rows:auto auto auto}
+#stage{height:min(92vw,520px)}
+aside{display:block;padding-block:0 24px}
+aside > *+*{margin-top:10px}
+.book{height:60vh}
+}
+</style>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="app">
+  <div class="main">
+    <header>
+      <h1>Worldseed</h1>
+      <p class="tag">One word makes a planet. Six thousand years of its history play out while it turns.</p>
+      <form id="seed-form" autocomplete="off">
+        <label class="lbl" for="word">Your word</label>
+        <input id="word" type="text" maxlength="40" spellcheck="false" value="worldseed">
+        <button type="submit">Make this planet</button>
+      </form>
+    </header>
+    <div id="stage">
+      <canvas id="globe" aria-label="The planet. Drag to turn it."></canvas>
+      <canvas id="marks"></canvas>
+      <p id="status" hidden></p>
+    </div>
+    <div class="bar">
+      <button id="play" type="button" aria-pressed="true">Pause</button>
+      <input id="time" type="range" min="0" max="6000" step="10" value="0" aria-label="Year">
+      <span id="year">Year 0</span>
+      <div class="tools">
+        <button id="meteor" type="button" aria-pressed="false">Drop a meteor</button>
+        <label class="lbl" for="speed">Speed</label>
+        <select id="speed"><option value="60">Slow</option><option value="120" selected>Normal</option><option value="300">Fast</option></select>
+        <button id="share" type="button">Copy link</button>
+        <span id="stats"></span>
+      </div>
+    </div>
+  </div>
+  <aside>
+    <h2>Peoples now</h2>
+    <ul id="peoples"></ul>
+    <div class="book">
+      <h2>The chronicle</h2>
+      <ol id="log" aria-live="polite"></ol>
+    </div>
+    <p class="note">Tap a line to see where it happened. Same word, same world: send the link and a friend sees this history.</p>
+  </aside>
+</div>
+<script type="module" src="./src/app.js"></script>

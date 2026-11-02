@@ -96,6 +96,34 @@ Highlights: the builder committed a red test in the stopped build (it guessed a 
 The janitor's sweep counts a test as a user, so it missed four files copied from build 2 that only their own tests
 used. It said so, and they were removed.
 
+## Build 4: Worldseed (November 2, 2026)
+
+Builds 1 to 3 were good programs and still underwhelming, so the planner wrote harder rules before anyone pitched: a
+stranger says "whoa" within 10 seconds, you can play with it, it has several moving parts that change each other (too
+small if it fits in one file), it's not a copy of an existing game, and it runs in a browser with every picture made by
+code. Two rounds: pitch, then make someone else's pitch bigger. The planet, the history book and the "let me touch it"
+pitches merged into one.
+
+Type a word and get a planet. Peoples light their first fires by its rivers, spread, found cities, learn iron and
+sailing, fight, catch plague, break apart and vanish, and the chronicle writes it down while the globe turns and their
+city lights spread across the night side. Slide through 6,000 years, tap a line to see where it happened, or drop a
+meteor and history takes a different road from that year on. The same word always tells the same history. God games
+where civilizations grow exist (WorldBox sells one), and so do fantasy maps with made-up histories; nobody here claims
+"first".
+
+- The page: [builds/worldseed](builds/worldseed/) (open `index.html` through a small web server, or
+  `node tools/bundle.mjs worldseed.html` for one file; 69 tests, two of them in a headless browser).
+- The chat replay: [shifts/2026-11-02-build-4.html](shifts/2026-11-02-build-4.html).
+- The build's own commits: [shifts/2026-11-02-build-4.commits.txt](shifts/2026-11-02-build-4.commits.txt).
+
+Highlights: the skeptic pushed back six times. Four were fair, including extra code riding along with a fix and a crater
+test that passed on the old code. Two were a weak spot in Bite: a test that runs a script as its own program reads as
+"couldn't load" instead of "caught" when the script is missing
+([notes/bite-weak-spot-2026-11-02-build-4.md](notes/bite-weak-spot-2026-11-02-build-4.md)). Looking at the page caught
+two bugs no test had: cities showed who owned them at the end of history instead of in the year on screen, and a
+meteor on a coast left a crater nobody could see from space. Both have tests now. The skeptic's script also learned
+to say "only tests in this one" instead of a confusing error.
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.
