@@ -2,7 +2,7 @@
 // node tools/bundle.mjs OUT.html
 import { readFileSync, writeFileSync } from "node:fs";
 
-const order = ["rng", "noise", "clock", "island", "sim", "app"];
+const order = ["rng", "noise", "clock", "island", "genes", "sim", "app"];
 let js = "";
 for (const name of order) {
   let src = readFileSync(new URL(`../src/${name}.js`, import.meta.url), "utf8");

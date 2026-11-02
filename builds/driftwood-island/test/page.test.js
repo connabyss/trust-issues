@@ -73,6 +73,23 @@ test("the page shows the same island the rules give for that moment", { skip, ti
   });
 });
 
+test("fast-forward shows the week ahead, kinds splitting off, then comes back to now", { skip, timeout: 90000 }, async () => {
+  await open(new URL("..", import.meta.url).pathname, async (page) => {
+    assert.equal(await page.locator("#kinds li").count(), 1); // noon on day 7: evolution has started, one kind
+    await page.click("#ff");
+    assert.equal(await page.getAttribute("#ff", "aria-pressed"), "true");
+    assert.ok(await page.isVisible(".preview-tag"));
+    await page.clock.runFor(20000);
+    assert.match(await page.textContent("#clock"), /^Day 1[2-4],/);
+    assert.ok(await page.locator("#kinds li").count() >= 3, "kinds should have split off by then");
+    assert.match(await page.textContent("#history"), /split off/);
+    await page.clock.runFor(8000);
+    assert.equal(await page.textContent("#clock"), "Day 7, 12:00 pm");
+    assert.equal(await page.locator("#kinds li").count(), 1);
+    assert.ok(!(await page.isVisible(".preview-tag")));
+  });
+});
+
 test("the one-file version works on its own", { skip, timeout: 60000 }, async () => {
   const dir = mkdtempSync(join(tmpdir(), "isle-"));
   execFileSync(process.execPath, [new URL("../tools/bundle.mjs", import.meta.url).pathname, join(dir, "index.html")]);

@@ -23,6 +23,13 @@ h1{font:400 clamp(2rem,6vw,3.2rem)/1 var(--display);margin:0;text-wrap:balance}
 .replay-tag{position:absolute;top:10px;left:10px;font:500 .72rem var(--mono);letter-spacing:.1em;text-transform:uppercase;
 background:rgba(255,140,60,.9);color:#2b1606;padding:3px 8px;border-radius:4px;display:none}
 .replaying .replay-tag{display:block}
+.preview-tag{position:absolute;top:10px;left:10px;right:10px;width:max-content;max-width:calc(100% - 20px);font:500 .72rem var(--mono);letter-spacing:.06em;
+background:rgba(140,200,255,.92);color:#06223a;padding:3px 8px;border-radius:4px;display:none}
+.previewing .preview-tag{display:block}
+#kinds li{grid-template-columns:22px 1fr;column-gap:8px;align-items:center}
+#kinds li .when{grid-column:2}
+#kinds .dot{border-radius:50%;border:1px solid var(--rule);justify-self:center}
+#kinds li.gone{opacity:.55}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 button{font:500 .85rem var(--body);background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:8px 16px;cursor:pointer}
 button:hover{border-color:var(--dim)}button:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
@@ -40,21 +47,24 @@ li{display:grid;gap:1px}
 <main>
   <header>
     <h1>Driftwood Island</h1>
-    <p class="lede">A small island that is always running. Grass spreads in the real daylight, grazers eat, sleep, raise young and sometimes starve. Everyone who opens this page sees the same island at the same moment.</p>
+    <p class="lede">A small island that is always running. Grass spreads in the real daylight, grazers eat, sleep, raise young and sometimes starve, and from Day 7 they evolve. Everyone who opens this page sees the same island at the same moment.</p>
   </header>
   <div class="stats" aria-live="polite">
     <div id="clockbox"><b id="clock">Day 0</b><span id="phase">night</span></div>
     <div><b id="count">0</b><span>grazers</span></div>
+    <div><b id="nkinds">0</b><span id="nkinds-word">kinds</span></div>
     <div><b id="green">0%</b><span>of the soil green</span></div>
     <div><span>next tick in</span> <b id="next">10:00</b></div>
   </div>
   <div class="frame">
     <canvas id="isle" aria-label="The island seen from above, following the herd. Hover a grazer to meet it."></canvas>
     <span class="replay-tag">Replaying the last 24 hours</span>
+    <span class="preview-tag">Preview of the week ahead, by today's rules. A new rule could change it.</span>
     <div id="tip" hidden></div>
   </div>
   <div class="bar">
     <button id="replay" type="button" aria-pressed="false">Replay the last 24 hours</button>
+    <button id="ff" type="button" aria-pressed="false">Fast-forward a week</button>
     <button id="whole" type="button" aria-pressed="false">Whole island</button>
     <p class="small">Island time is UTC-5 all year. The island moves every ten minutes; leave it open and watch.</p>
   </div>
@@ -64,7 +74,10 @@ li{display:grid;gap:1px}
       <ol id="history"></ol>
     </section>
     <section>
-      <h2>The rules, and when each began</h2>
+      <h2>Kinds of grazer</h2>
+      <p id="kinds-none" class="small">One kind so far. From 6:00 am on Day 7, young take after their parents with small changes, and a line that drifts far enough becomes a new kind with its own name.</p>
+      <ul id="kinds"></ul>
+      <h2 style="margin-top:22px">The rules, and when each began</h2>
       <ul id="rules"></ul>
       <p class="small" style="margin-top:12px">There's no server. Your browser works the island out from the real clock, starting from the day it rose (October 26, 2026). The days before this page existed were worked out backwards from the same rules. New rules only ever start in the future, so the past never changes.</p>
     </section>
