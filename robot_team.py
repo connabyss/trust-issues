@@ -1,0 +1,326 @@
+"""Robot dev team: four robots work one project and keep each other honest.
+
+  writer     (Claude)  fixes bugs and commits, saying what it fixed
+  skeptic    (Bite)    takes each fix back out and checks a test notices
+  janitor    (vulture) sweeps dead code; keeps the sweep only if the tests stay green
+  historian  (Bite)    the comeback alarm: a fix that a later commit quietly undid
+
+Every robot line is logged to <project>/shift.jsonl as it happens. `page` turns the log into a chat page.
+
+  python robot_team.py init DIR              make the toy lemonade-stand project (planted bugs)
+  python robot_team.py commit DIR "msg" "what the writer says"   writer commits its change
+  python robot_team.py say DIR ROBOT "text"  a line with no action behind it (shown as staged on the page)
+  python robot_team.py skeptic DIR [SHA]     Bite checks one commit (default: the newest)
+  python robot_team.py janitor DIR           sweep dead code, tests must stay green
+  python robot_team.py historian DIR         look for fixes a later commit undid
+  python robot_team.py page DIR OUT.html     build the chat replay page
+
+Free: no API key. Needs git, pytest, vulture and bite (pip install bite-check pytest vulture).
+"""
+import datetime
+import html
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+EASTERN = ZoneInfo("America/New_York")
+
+ROBOTS = {
+    "writer": ("The writer", "Claude", "✍️"),
+    "skeptic": ("The skeptic", "Bite", "🧐"),
+    "janitor": ("The janitor", "vulture", "🧹"),
+    "historian": ("The historian", "Bite's comeback alarm", "📜"),
+}
+
+
+def run(cmd, cwd, check=True):
+    p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8")
+    if check and p.returncode:
+        sys.exit(f"failed: {' '.join(cmd)}\n{p.stdout}\n{p.stderr}")
+    return p
+
+
+def git(d, *a, check=True):
+    return run(["git", *a], d, check).stdout.strip()
+
+
+def log(d, robot, text, **extra):
+    ev = {"t": datetime.datetime.now().astimezone().isoformat(timespec="seconds"), "robot": robot, "text": text, **extra}
+    with open(Path(d) / "shift.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(ev, ensure_ascii=False) + "\n")
+    print(f"{ROBOTS[robot][2]} {ROBOTS[robot][0]}: {text}")
+
+
+def tests_pass(d):
+    return run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"], d, check=False).returncode == 0
+
+
+# ---------- the toy project ----------
+
+TOY_CODE = '''\
+"""A lemonade stand's till."""
+import math
+
+PRICE_PER_CUP = 1.50
+CODES = {"SUMMER": 0.20}
+
+
+def order_total(cups, tip_percent=0, code=None):
+    subtotal = cups * PRICE_PER_CUP
+    if code in CODES:
+        subtotal = subtotal * (1 - CODES[code])
+    tip = subtotal * tip_percent / 100
+    return round(subtotal + tip, 2)
+
+
+def old_order_total(cups):
+    return cups * 1.25
+'''
+
+TOY_TEST = '''\
+from lemonade import order_total
+
+
+def test_two_cups():
+    assert order_total(2) == 3.0
+
+
+def test_summer_code():
+    assert order_total(10, code="SUMMER") == 12.0
+'''
+
+
+def init(d):
+    d = Path(d)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "lemonade.py").write_text(TOY_CODE, encoding="utf-8")
+    (d / "tests").mkdir(exist_ok=True)
+    (d / "tests" / "test_lemonade.py").write_text(TOY_TEST, encoding="utf-8")
+    (d / "pyproject.toml").write_text('[tool.pytest.ini_options]\npythonpath = ["."]\n', encoding="utf-8")
+    (d / ".gitignore").write_text("shift.jsonl\nbite_proof/\n__pycache__/\n", encoding="utf-8")
+    git(d, "init", "-q", "-b", "main")
+    git(d, "config", "user.name", "Lemonade Stand")
+    git(d, "config", "user.email", "stand@example.invalid")
+    git(d, "add", "lemonade.py", "tests", "pyproject.toml", ".gitignore")
+    git(d, "commit", "-q", "-m", "Lemonade stand till")
+    print(f"toy project ready in {d}")
+
+
+# ---------- the writer ----------
+
+def commit(d, msg, says):
+    git(d, "add", "-u")
+    for f in git(d, "ls-files", "--others", "--exclude-standard").splitlines():
+        git(d, "add", f)
+    git(d, "-c", "user.name=Writer (Claude)", "commit", "-q", "-m", msg)
+    sha = git(d, "rev-parse", "--short=8", "HEAD")
+    stat = git(d, "show", "--stat", "--format=", "HEAD").splitlines()[-1].strip()
+    log(d, "writer", says, sha=sha, subject=msg, stat=stat)
+
+
+# ---------- the skeptic ----------
+
+SKEPTIC = {
+    "noticed": "Took your change back out and ran the tests. {why} went red. Fine. I believe you. This time.",
+    "no_test_noticed": "Took your change back out and ran the tests. Everything stayed green. "
+                       "So nothing proves it works, and nothing will notice if it disappears. Prove it: add a test "
+                       "that fails without your change.",
+    "its_tests_didnt_notice": "You added a test, but it still passes with your change taken out. "
+                              "It tests nothing you did. Try again.",
+    "tests_fail": "The tests already fail here, so I can't tell you anything. Fix that first.",
+    "undone_later": "This fix is already gone from today's code.",
+    "skipped": "Nothing for me to prove here: {reason}. I'll allow it.",
+}
+
+
+def bite(d, *args):
+    p = run(["bite", "--free", "--again", "--json", *args], d, check=False)
+    try:
+        return json.loads(p.stdout)
+    except json.JSONDecodeError:
+        sys.exit(f"bite gave no JSON:\n{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
+
+
+def skeptic(d, sha=None):
+    sha = sha or git(d, "rev-parse", "--short=8", "HEAD")
+    r = bite(d, "--any", "--only", sha)
+    hits = [c for c in r["commits"] if c["sha"].startswith(sha[:7]) or sha.startswith(c["sha"][:7])]
+    if not hits:
+        log(d, "skeptic", f"Nothing for me to check in {sha}. {r.get('message', '')}".strip(), sha=sha)
+        return
+    c = hits[0]
+    why = re.search(r"\b(test_\w+)", c.get("label", "") + " " + c.get("detail", ""))
+    text = SKEPTIC.get(c["result"], c["detail"]).format(why=why.group(1) if why else "A test", detail=c["detail"],
+                                                 reason=re.sub(r"^Skipped:\s*", "", c["detail"]).rstrip("."))
+    log(d, "skeptic", text, sha=sha, result=c["result"], bite_label=c["label"], bite_detail=c["detail"])
+
+
+# ---------- the janitor ----------
+
+def janitor(d):
+    d = Path(d)
+    p = run([sys.executable, "-m", "vulture", ".", "--min-confidence", "60", "--sort-by-size",
+             "--exclude", "bite_proof"], d,
+            check=False)
+    found = []
+    for line in p.stdout.splitlines():
+        m = re.match(r"(.+?):(\d+): unused (import|function|variable) '(\w+)'.*?(\d+) lines?\)", line)
+        if m and not re.match(r"(tests?[\\/]|test_)", m.group(1)):
+            found.append((m.group(1), int(m.group(2)), m.group(3), m.group(4), int(m.group(5))))
+    if not found:
+        log(d, "janitor", "Swept the whole place. Nothing dead lying around.")
+        return
+    by_file = {}
+    for f, ln, kind, name, size in found:
+        by_file.setdefault(f, []).append((ln, kind, name, size))
+    for f, items in by_file.items():
+        path = d / f
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+        for ln, kind, name, size in sorted(items, reverse=True):
+            del lines[ln - 1:ln - 1 + size]
+        text = re.sub(r"\n{4,}", "\n\n\n", "".join(lines)).rstrip("\n") + "\n"
+        path.write_text(text, encoding="utf-8")
+    names = [f"{kind} {name}" for _, _, kind, name, _ in found]
+    if not tests_pass(d):
+        git(d, "checkout", "--", ".")
+        log(d, "janitor", f"Tried to sweep up {', '.join(names)}, but the tests went red, so I put it all back.")
+        return
+    git(d, "add", "-u")
+    git(d, "-c", "user.name=Janitor (vulture)", "commit", "-q", "-m", "Tidy up: remove unused " + ", ".join(names))
+    sha = git(d, "rev-parse", "--short=8", "HEAD")
+    log(d, "janitor", f"Swept up the unused {', '.join(names)}. Tests still green, so it stays swept.",
+        sha=sha, swept=names)
+
+
+# ---------- the historian ----------
+
+def historian(d):
+    r = bite(d, "--free-checks", "40")  # fix claims only: undoing a "simplify" is no loss
+    back = [c for c in r["commits"] if c["result"] == "undone_later"
+            and re.search(r"\b(fix|fixe[sd]|bug|repair|resolve[sd]?)\b", c["subject"], re.I)]
+    if not back:
+        log(d, "historian", f"Read the whole history. Every fix that was made is still here.")
+        return
+    for c in back:
+        by = (c.get("undone_by") or {}).get("sha", "")
+        by_subj = (c.get("undone_by") or {}).get("subject", "")
+        by_who = git(d, "log", "-1", "--format=%an", by, check=False) if by else ""
+        warned = any(json.loads(l).get("result") == "no_test_noticed" and c["sha"].startswith(json.loads(l).get("sha", "-"))
+                     for l in (Path(d) / "shift.jsonl").read_text(encoding="utf-8").splitlines() if l.strip())
+        text = (f"Hold on. The fix \"{c['subject']}\" is gone from today's code. "
+                f"{by_who or 'Someone'}'s commit \"{by_subj or 'a later one'}\" quietly put the old code back. "
+                "The tests stayed green the whole time, because no test guarded it."
+                + (" The skeptic warned you about exactly this." if warned else ""))
+        log(d, "historian", text, sha=c["sha"][:8], result="undone_later", undone_by=by[:8])
+
+
+# ---------- the page ----------
+
+PAGE = """<title>Robot Dev Team</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,750&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: one narrow chat column, a cast strip on top, the log reads like a team chat transcript */
+:root{--bg:#f3f5f2;--fg:#17201b;--mut:#5d6a62;--panel:#ffffff;--line:#d9e0da;
+--writer:#2f6fdb;--skeptic:#d2561c;--janitor:#2c8a4f;--historian:#7a4fc4;--tint:.10;
+--display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+--body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;
+--panel:#1b2420;--line:#2c3832;--writer:#7aa7ff;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;--panel:#1b2420;--line:#2c3832;
+--writer:#7aa7ff;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body)}
+main{max-width:720px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));
+padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font:750 clamp(1.7rem,5vw,2.4rem)/1.1 var(--display);margin:0 0 6px;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 22px;max-width:60ch}
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:22px}
+.cast div{display:flex;gap:10px;align-items:center;min-width:0;font-size:.9rem;color:var(--mut)}
+.cast b{display:block;color:var(--fg)}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--bg);
+font:750 .95rem var(--display);background:var(--c)}
+.writer{--c:var(--writer)}.skeptic{--c:var(--skeptic)}.janitor{--c:var(--janitor)}.historian{--c:var(--historian)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;
+padding:6px 12px;cursor:pointer}button:focus-visible{outline:2px solid var(--writer);outline-offset:2px}
+.msg{display:flex;gap:10px;margin:14px 0;transition:opacity .35s,transform .35s}
+.msg.off{opacity:0;transform:translateY(6px)}
+.bub{min-width:0;border-radius:4px 14px 14px 14px;padding:9px 13px;border:1px solid var(--line);
+background:color-mix(in srgb,var(--c) calc(var(--tint)*100%),var(--panel))}
+.who{font:750 .9rem var(--display);color:var(--c)}.who span{color:var(--mut);font:400 .8rem var(--body)}
+.staged{font:400 .72rem var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);
+border:1px dashed var(--line);border-radius:6px;padding:0 6px;margin-left:6px}
+.meta{color:var(--mut);font-size:.8rem;margin-top:4px;overflow-wrap:anywhere}
+code{font:.82em var(--mono)}
+.note{border-top:1px solid var(--line);margin-top:28px;padding-top:14px;font-size:.92rem;color:var(--mut)}
+.note b{color:var(--fg)}.note p{margin:0 0 10px;max-width:65ch}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+<main>
+<h1>My dev team is 4 robots</h1>
+<p class="sub">And one of them doesn't trust the others. One real shift on a tiny lemonade-stand till, __DATE__.</p>
+<div class="cast">__CAST__</div>
+<div class="bar"><button id="play" type="button">Play the shift</button><button id="all" type="button">Show it all</button></div>
+<div id="chat">__MSGS__</div>
+<div class="note">__NOTE__</div>
+</main>
+<script>
+const ms=[...document.querySelectorAll('.msg')];let timers=[];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.getElementById('all').onclick=()=>{timers.forEach(clearTimeout);ms.forEach(m=>m.classList.remove('off'))};
+document.getElementById('play').onclick=()=>{timers.forEach(clearTimeout);ms.forEach(m=>m.classList.add('off'));
+timers=ms.map((m,i)=>setTimeout(()=>{m.classList.remove('off');m.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'})},400+i*1600));};
+</script>"""
+
+
+def page(d, out, note=""):
+    evs = [json.loads(l) for l in (Path(d) / "shift.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    cast = "".join(f'<div class="{k}"><span class="av">{n.split()[-1][0].upper()}</span>'
+                   f'<span><b>{html.escape(n)}</b>{html.escape(w)}</span></div>' for k, (n, w, _) in ROBOTS.items())
+    msgs = []
+    for ev in evs:
+        name, who, _ = ROBOTS[ev["robot"]]
+        meta = []
+        if ev.get("subject"):
+            meta.append(f'commit <code>{ev["sha"]}</code> “{html.escape(ev["subject"])}”')
+        elif ev.get("sha"):
+            meta.append(f'about <code>{ev["sha"]}</code>')
+        if ev.get("bite_label"):
+            meta.append(f'Bite said: {html.escape(ev["bite_label"])}')
+        meta.append(datetime.datetime.fromisoformat(ev["t"]).astimezone(EASTERN).strftime("%-I:%M %p ET"))
+        tag = '<span class="staged">staged</span>' if ev.get("staged") else ""
+        msgs.append(f'<div class="msg {ev["robot"]}"><span class="av">{name.split()[-1][0].upper()}</span>'
+                    f'<div class="bub"><div class="who">{name} <span>{html.escape(who)}</span>{tag}</div>'
+                    f'{html.escape(ev["text"])}<div class="meta">{" · ".join(meta)}</div></div></div>')
+    date = datetime.datetime.fromisoformat(evs[0]["t"]).astimezone(EASTERN).strftime("%B %-d, %Y") if evs else ""
+    Path(out).write_text(PAGE.replace("__CAST__", cast).replace("__MSGS__", "\n".join(msgs))
+                         .replace("__NOTE__", note).replace("__DATE__", date), encoding="utf-8")
+    print(f"page: {out}")
+
+
+if __name__ == "__main__":
+    a = sys.argv[1:]
+    if not a:
+        sys.exit(__doc__)
+    cmd, d = a[0], a[1]
+    if cmd == "init":
+        init(d)
+    elif cmd == "commit":
+        commit(d, a[2], a[3])
+    elif cmd == "say":
+        log(d, a[2], a[3], staged=True)
+    elif cmd == "skeptic":
+        skeptic(d, a[2] if len(a) > 2 else None)
+    elif cmd == "janitor":
+        janitor(d)
+    elif cmd == "historian":
+        historian(d)
+    elif cmd == "page":
+        page(d, a[2], a[3] if len(a) > 3 else "")
+    else:
+        sys.exit(__doc__)
