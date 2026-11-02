@@ -1,0 +1,14 @@
+581c606 Planner (Claude): Empty project: Birth sky
+41e8bcc Builder (Claude): Star maths: date, time and place to altitude and azimuth
+8e9ecb5 Builder (Claude): The stars: 1,627 from a public catalog, plus constellation lines
+87e1dad Builder (Claude): Keep both halves of Serpens
+1f74a64 Builder (Claude): Flatten the sky dome onto a circle
+0d1c4fb Builder (Claude): The moon: where it was and how full
+4bab865 Builder (Claude): Cities and local time
+79759ac Builder (Claude): Put the whole sky together for one moment and place
+6944a28 Builder (Claude): Make a short link for a sky you want to send
+5b02ba6 Builder (Claude): Draw the sky as a round poster
+edc28fb Builder (Claude): Fix the full moon drawing as a dark disc
+b3127d7 Builder (Claude): The page: pick a date, time and city, see the sky, copy a link
+1e36496 Builder (Claude): README: what it is, where the data comes from, what isn't tested
+d392ba3 Builder (Claude): README: say how far off the map can be
