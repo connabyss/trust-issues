@@ -7,7 +7,7 @@ import { coatColour, awakeAt } from "./genes.js";
 const $ = (id) => document.getElementById(id);
 const canvas = $("isle"), ctx = canvas.getContext("2d");
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-let live = null, prev = null, hopStart = 0, replay = null, hover = null, whole = false;
+let live = null, prev = null, hopStart = 0, replay = null, hover = null, whole = false, hunt = false, followed = null;
 const FF_DAYS = 7;
 const view = { x: W / 2, y: H / 2, s: 0 }; // what the camera looks at, in tiles, and screen pixels per tile
 let drawn = []; // where each grazer was drawn this frame, for hovering
@@ -45,6 +45,12 @@ function skyTint(tick) {
 // The camera frames the herd (or the whole island when there's no herd, or when asked) and drifts there slowly.
 function aim(state) {
   const cw = canvas.width, ch = canvas.height, all = { x: W / 2, y: H / 2, s: Math.min(cw / W, ch / H) };
+  if (hunt && state.prowlers.length) {
+    // Follow one prowler, sticking with it while it lives; prefer one that's chasing.
+    let p = state.prowlers.find((q) => q.id === followed);
+    if (!p) { p = state.prowlers.find((q) => q.chasing) || state.prowlers[0]; followed = p.id; }
+    return { x: (p.at % W) + 0.5, y: Math.floor(p.at / W) + 0.5, s: all.s * 3 };
+  }
   if (whole || !state.grazers.length) return all;
   let x0 = W, y0 = H, x1 = 0, y1 = 0;
   for (const z of state.grazers) { const x = z.at % W, y = Math.floor(z.at / W); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
@@ -122,6 +128,40 @@ function drawGrazer(z, p, sx, sy, u, up) {
   ctx.restore();
 }
 
+function drawProwler(p, sx, sy, r, face, t, running) {
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.scale(face, 1);
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.beginPath(); ctx.ellipse(0, r * 0.45, r * 1.2, r * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+  const fur = p.awake ? "#3b2e2a" : "#4a3c36", stride = running && !reduce ? Math.sin(t * 14 + p.id) : 0;
+  ctx.strokeStyle = fur; ctx.lineCap = "round"; ctx.lineWidth = Math.max(1.2, r * 0.14);
+  if (p.awake) { // legs
+    for (const [lx, sgn] of [[-0.6, 1], [-0.35, -1], [0.45, 1], [0.7, -1]]) {
+      ctx.beginPath(); ctx.moveTo(lx * r, r * 0.05); ctx.lineTo(lx * r + stride * sgn * r * 0.3, r * 0.42); ctx.stroke();
+    }
+  }
+  // tail
+  ctx.lineWidth = Math.max(1.2, r * 0.12);
+  const wag = reduce ? 0 : Math.sin(t * 3 + p.id) * r * 0.12;
+  ctx.beginPath(); ctx.moveTo(-r * 0.85, -r * 0.05);
+  ctx.quadraticCurveTo(-r * 1.4, running ? -r * 0.5 : r * 0.1, -r * 1.55, (running ? -r * 0.75 : r * 0.25) + wag); ctx.stroke();
+  ctx.fillStyle = fur;
+  if (!p.awake) {
+    ctx.beginPath(); ctx.ellipse(0, r * 0.1, r * 0.95, r * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    return;
+  }
+  ctx.beginPath(); ctx.ellipse(0, -r * 0.08, r * 0.95, r * 0.3, running ? -0.08 : 0, 0, Math.PI * 2); ctx.fill();
+  // head and ears
+  ctx.beginPath(); ctx.ellipse(r * 0.95, -r * 0.35, r * 0.32, r * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(r * 0.8, -r * 0.5); ctx.lineTo(r * 0.85, -r * 0.82); ctx.lineTo(r * 0.98, -r * 0.55); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(r * 1.0, -r * 0.52); ctx.lineTo(r * 1.1, -r * 0.82); ctx.lineTo(r * 1.18, -r * 0.5); ctx.fill();
+  ctx.fillStyle = "#e8a23a";
+  ctx.beginPath(); ctx.arc(r * 1.05, -r * 0.4, Math.max(0.9, r * 0.07), 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 function draw(state, prevState, f, now) {
   const cw = canvas.width, ch = canvas.height, tick = state.tick, alt = sunAt(tick), up = alt > -3;
   const goal = aim(state);
@@ -194,6 +234,39 @@ function draw(state, prevState, f, now) {
       ctx.beginPath(); ctx.arc(sx, sy, u * 1.4, 0, Math.PI * 2); ctx.stroke();
     }
   }
+  // Prowlers: long, low and dark, tail up when chasing. A faint line shows who they're after; a catch leaves a burst.
+  const lastP = new Map((prevState ? prevState.prowlers : []).map((p) => [p.id, p.at]));
+  const byId = new Map(state.grazers.map((z) => [z.id, z]));
+  const e = Math.min(1, f);
+  if (prevState && f < 1.4) {
+    const alive = new Set(state.grazers.map((z) => z.id)), dens = new Set(state.prowlers.map((p) => p.at));
+    for (const z of prevState.grazers) {
+      if (alive.has(z.id) || !dens.has(z.at)) continue;
+      const cx = X((z.at % W) + 0.5), cy = Y(Math.floor(z.at / W) + 0.5), r = u * (0.8 + f * 1.4);
+      ctx.strokeStyle = `rgba(214,60,40,${Math.max(0, 0.8 - f * 0.55)})`; ctx.lineWidth = Math.max(1.5, u * 0.15);
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+  for (const p of state.prowlers) {
+    const from = lastP.has(p.id) ? lastP.get(p.id) : p.at;
+    const px = (from % W) + ((p.at % W) - (from % W)) * e + 0.5, py = Math.floor(from / W) + (Math.floor(p.at / W) - Math.floor(from / W)) * e + 0.5;
+    const sx = X(px), sy = Y(py);
+    if (sx < -60 || sy < -60 || sx > cw + 60 || sy > ch + 60) continue;
+    const target = p.chasing && byId.get(p.chasing);
+    if (target) {
+      ctx.strokeStyle = "rgba(230,80,50,0.45)"; ctx.lineWidth = Math.max(1, u * 0.08); ctx.setLineDash([u * 0.4, u * 0.3]);
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(X((target.at % W) + 0.5), Y(Math.floor(target.at / W) + 0.5)); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    const dir = (p.at % W) - (from % W) || (target ? (target.at % W) - (p.at % W) : 0) || (p.id % 2 ? 1 : -1);
+    drawProwler(p, sx, sy, u * (0.9 + 0.6 * p.g.size), dir >= 0 ? 1 : -1, now / 1000, !!target);
+    drawn.push({ z: p, sx, sy, r: u, prowler: true });
+    if (hover && hover.id === p.id) {
+      ctx.strokeStyle = "#fff6d8"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sx, sy, u * 1.6, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (p.awake && alt < -3) eyes.push([sx + (dir >= 0 ? 1 : -1) * u * 1.05, sy - u * 0.42, true]);
+  }
   // Gulls crossing the sky by day.
   if (alt > 4 && !reduce) {
     ctx.strokeStyle = "rgba(255,255,255,0.85)"; ctx.lineWidth = Math.max(1.2, s / 14);
@@ -207,8 +280,10 @@ function draw(state, prevState, f, now) {
   const tint = skyTint(tick);
   if (tint) { ctx.fillStyle = tint; ctx.fillRect(0, 0, cw, ch); }
   // Night grazers' eyes catch the starlight.
-  ctx.fillStyle = "rgba(255,236,150,0.95)";
-  for (const [ex, ey] of eyes) { ctx.beginPath(); ctx.arc(ex, ey, Math.max(1.3, u * 0.09), 0, Math.PI * 2); ctx.fill(); }
+  for (const [ex, ey, hunter] of eyes) {
+    ctx.fillStyle = hunter ? "rgba(255,120,60,0.95)" : "rgba(255,236,150,0.95)";
+    ctx.beginPath(); ctx.arc(ex, ey, Math.max(1.3, u * (hunter ? 0.12 : 0.09)), 0, Math.PI * 2); ctx.fill();
+  }
   if (alt < -6) {
     // Stars over the water, and fireflies drifting over the grass.
     for (let q = 0; q < 90; q++) {
@@ -239,6 +314,7 @@ function describe(state) {
   $("clock").textContent = label(tick);
   $("phase").textContent = part;
   $("count").textContent = String(state.grazers.length);
+  $("prowl").textContent = String(state.prowlers.length);
   const nk = state.kinds.filter((k) => k.named && k.count > 0).length;
   $("nkinds").textContent = String(nk);
   $("nkinds-word").textContent = nk === 1 ? "kind" : "kinds";
@@ -318,24 +394,35 @@ function play(mode) {
   if (was === mode) return;
   const start = mode === "replay" ? runTo(live.tick - TICKS_PER_DAY) : cloneState(live);
   const end = mode === "replay" ? live.tick : live.tick + FF_DAYS * TICKS_PER_DAY;
-  replay = { mode, frames: [cloneState(start)], work: start, end, k: 0, t0: performance.now(), per: mode === "replay" ? 90 : 25 }; // a day in 13 s; the week ahead in about 25 s
+  replay = { mode, frames: [cloneState(start)], work: start, end, pos: 0, last: performance.now() };
   $(mode).textContent = "Back to now";
   $(mode).setAttribute("aria-pressed", "true");
-  document.body.classList.add(mode === "replay" ? "replaying" : "previewing");
+  document.body.classList.add(mode === "replay" ? "replaying" : "previewing", "playing");
 }
+
+// How fast a replay or fast-forward plays, in milliseconds per ten-minute tick. 0 is paused.
+const SPEEDS = { pause: 0, slow: 420, normal: 140, fast: 40 }; // a day in 60 s, 20 s, 6 s
+let speed = "normal";
+function setSpeed(name) {
+  speed = name;
+  for (const b of document.querySelectorAll("[data-speed]")) b.setAttribute("aria-pressed", String(b.dataset.speed === name));
+}
+for (const b of document.querySelectorAll("[data-speed]")) b.addEventListener("click", () => setSpeed(b.dataset.speed));
 function stopReplay() {
   replay = null;
   $("replay").textContent = "Replay the last 24 hours";
   $("ff").textContent = "Fast-forward a week";
   for (const id of ["replay", "ff"]) $(id).setAttribute("aria-pressed", "false");
-  document.body.classList.remove("replaying", "previewing");
+  document.body.classList.remove("replaying", "previewing", "playing");
 }
 
 let shown = null; // the moment on screen (live, or a replay/fast-forward frame)
 
 function frame(now) {
   if (replay) {
-    const pos = (now - replay.t0) / replay.per, k = Math.floor(pos);
+    if (SPEEDS[speed]) replay.pos += Math.min(100, now - replay.last) / SPEEDS[speed];
+    replay.last = now;
+    const pos = replay.pos, k = Math.floor(pos);
     while (replay.frames.length < k + 2 && replay.work.tick < replay.end) { step(replay.work); replay.frames.push(cloneState(replay.work)); }
     if (replay.frames.length > k + 2) replay.frames[k - 1] = null; // let old moments go
     if (k >= replay.frames.length - 1) stopReplay();
@@ -369,6 +456,14 @@ canvas.addEventListener("pointermove", (ev) => {
   const tip = $("tip");
   if (best) {
     const z = best.z, days = Math.floor(z.age / TICKS_PER_DAY);
+    if (best.prowler) {
+      const how = z.energy > 2 ? "well fed" : z.energy > 0.7 ? "hungry" : "starving";
+      const when = z.g.night > 0.7 ? "hunts by night" : z.g.night < 0.35 ? "hunts by day" : "hunts day and night";
+      tip.textContent = `Prowler #${z.id} · ${days} ${days === 1 ? "day" : "days"} old · ${how} · ${when}${z.chasing ? " · chasing" : ""}`;
+      tip.hidden = false;
+      tip.style.left = `${ev.clientX - r.left + 12}px`; tip.style.top = `${ev.clientY - r.top + 12}px`;
+      return;
+    }
     const kind = z.kind && shown.kinds[z.kind - 1], fed = z.energy > 1.2 ? "well fed" : z.energy > 0.4 ? "peckish" : "starving";
     const habit = !z.g ? "" : z.g.night > 0.8 ? " · sleeps by day" : z.g.night > 0.5 ? " · up day and night" : z.g.night > 0.25 ? " · up late" : "";
     tip.textContent = `Grazer #${z.id}${kind && kind.named ? ", a " + kind.name : ""} · ${days} ${days === 1 ? "day" : "days"} old · ${fed}${habit}`;
@@ -379,7 +474,15 @@ canvas.addEventListener("pointermove", (ev) => {
 canvas.addEventListener("pointerleave", () => { hover = null; $("tip").hidden = true; });
 $("replay").addEventListener("click", () => play("replay"));
 $("ff").addEventListener("click", () => play("ff"));
+$("hunt").addEventListener("click", () => {
+  hunt = !hunt;
+  followed = null;
+  if (hunt && whole) $("whole").click();
+  $("hunt").setAttribute("aria-pressed", String(hunt));
+  $("hunt").textContent = hunt ? "Follow the herd" : "Follow a prowler";
+});
 $("whole").addEventListener("click", () => {
+  if (!whole && hunt) $("hunt").click();
   whole = !whole;
   $("whole").setAttribute("aria-pressed", String(whole));
   $("whole").textContent = whole ? "Follow the herd" : "Whole island";
@@ -390,4 +493,5 @@ writeRules();
 catchUp();
 writeHistory(live);
 requestAnimationFrame(frame);
-window.__island = { get live() { return live; }, get shown() { return shown; }, light };
+window.__island = { get live() { return live; }, get shown() { return shown; }, get view() { return { ...view }; },
+  get drawn() { return drawn.map((d) => ({ id: d.z.id, prowler: !!d.prowler })); }, light };

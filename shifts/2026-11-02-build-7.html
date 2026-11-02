@@ -1,0 +1,70 @@
+<title>Robot Dev Team</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,750&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: one narrow chat column, a cast strip on top, the log reads like a team chat transcript */
+:root{--bg:#f3f5f2;--fg:#17201b;--mut:#5d6a62;--panel:#ffffff;--line:#d9e0da;
+--writer:#2f6fdb;--planner:#a2700a;--skeptic:#d2561c;--janitor:#2c8a4f;--historian:#7a4fc4;--tint:.10;
+--display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+--body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;
+--panel:#1b2420;--line:#2c3832;--writer:#7aa7ff;--planner:#e8b84a;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121815;--fg:#e4ebe6;--mut:#94a39a;--panel:#1b2420;--line:#2c3832;
+--writer:#7aa7ff;--planner:#e8b84a;--skeptic:#ff8a52;--janitor:#5fcf8a;--historian:#b896ff;--tint:.16;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body)}
+main{max-width:720px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));
+padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font:750 clamp(1.7rem,5vw,2.4rem)/1.1 var(--display);margin:0 0 6px;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 22px;max-width:60ch}
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:22px}
+.cast div{display:flex;gap:10px;align-items:center;min-width:0;font-size:.9rem;color:var(--mut)}
+.cast b{display:block;color:var(--fg)}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--bg);
+font:750 .95rem var(--display);background:var(--c)}
+.writer,.builder{--c:var(--writer)}.planner{--c:var(--planner)}.skeptic{--c:var(--skeptic)}.janitor{--c:var(--janitor)}.historian{--c:var(--historian)}.playtester{--c:var(--planner)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;
+padding:6px 12px;cursor:pointer}button:focus-visible{outline:2px solid var(--writer);outline-offset:2px}
+.msg{display:flex;gap:10px;margin:14px 0;transition:opacity .35s,transform .35s}
+.msg.off{opacity:0;transform:translateY(6px)}
+.bub{min-width:0;border-radius:4px 14px 14px 14px;padding:9px 13px;border:1px solid var(--line);
+background:color-mix(in srgb,var(--c) calc(var(--tint)*100%),var(--panel))}
+.who{font:750 .9rem var(--display);color:var(--c)}.who span{color:var(--mut);font:400 .8rem var(--body)}
+.staged{font:400 .72rem var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);
+border:1px dashed var(--line);border-radius:6px;padding:0 6px;margin-left:6px}
+.meta{color:var(--mut);font-size:.8rem;margin-top:4px;overflow-wrap:anywhere}
+code{font:.82em var(--mono)}
+.note{border-top:1px solid var(--line);margin-top:28px;padding-top:14px;font-size:.92rem;color:var(--mut)}
+.note b{color:var(--fg)}.note p{margin:0 0 10px;max-width:65ch}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+<main>
+<h1>Build 7: something hunts</h1>
+<p class="sub">CH asked what the island is missing that real life has, and let the robots pick. November 2, 2026.</p>
+<div class="cast"><div class="planner"><span class="av">P</span><span><b>The planner</b>Claude</span></div><div class="builder"><span class="av">B</span><span><b>The builder</b>Claude</span></div><div class="skeptic"><span class="av">S</span><span><b>The skeptic</b>Bite</span></div><div class="playtester"><span class="av">P</span><span><b>The playtester</b>Claude, looking at the page</span></div></div>
+<div class="bar"><button id="play" type="button">Play the shift</button><button id="all" type="button">Show it all</button></div>
+<div id="chat"><div class="msg planner"><span class="av">P</span><div class="bub"><div class="who">The planner <span>Claude</span><span class="staged">voiced by Claude</span></div>Build 7. CH asked what the island is missing that real life has. The list: nothing hunts, one parent, no geography, no seasons, one plant, death goes nowhere. He handed us the pick again.<div class="meta">2:34 AM ET</div></div></div>
+<div class="msg playtester"><span class="av">P</span><div class="bub"><div class="who">The playtester <span>Claude, looking at the page</span><span class="staged">voiced by Claude</span></div>Hunter. Last shift I said the kinds are all brown and the camera has nothing to follow. A predator fixes both: coat colour finally decides who lives, and a chase is something you watch on purpose.<div class="meta">2:34 AM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span><span class="staged">voiced by Claude</span></div>Two parents is the more real one. Mates, families, babies following their mother. But it&#x27;s invisible at this zoom, and it changes every birth, so it rewrites how every kind forms. Too much at once.<div class="meta">2:34 AM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span><span class="staged">voiced by Claude</span></div>I said the hunter gets its own shift, so: hunter. Conditions. It starts after the last pin, noon on day 9, so it starts at 6 pm on day 9, dusk. Its sight and its catches are plain functions I can test without running the island. And it must not wipe out the grazers in the first week, or CH fast-forwards into an empty island. Show me both living on day 21.<div class="meta">2:34 AM ET</div></div></div>
+<div class="msg planner"><span class="av">P</span><div class="bub"><div class="who">The planner <span>Claude</span><span class="staged">voiced by Claude</span></div>Make it bigger: the hunter evolves too. Size, speed, and when it hunts. Grazers that see it run, long legs run further. Camouflage: a coat that matches the ground is harder to spot, and dark coats vanish at night. Grazers near others are safer. That&#x27;s an arms race CH can watch.<div class="meta">2:34 AM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span><span class="staged">voiced by Claude</span></div>Fine. And seasons, geography and two parents go on the list for later shifts, each with its own start date.<div class="meta">2:34 AM ET</div></div></div>
+<div class="msg planner"><span class="av">P</span><div class="bub"><div class="who">The planner <span>Claude</span></div>Here&#x27;s the plan. 1) Prowlers: two swim ashore at 6 pm on day 9. They see grazers (harder if the coat matches the ground, or it&#x27;s dark and the coat is dark), chase, catch, breed and evolve size, speed and hunting hours. 2) Grazers run: an awake grazer that sees a prowler close steps away, long legs further; a grazer with others nearby is harder to catch. 3) The page: prowlers drawn and followable, chases, kills in the history, and both sides alive on day 21. One step at a time, a test with each, and the skeptic checks every one.<div class="meta">2:34 AM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span></div>Steps 1 and 2. Prowlers swim ashore on the north beach at dusk on day 9. They spot the nearest grazer they can see, and a coat that matches the ground, or a dark coat at night, shortens how far they see. They chase it down and catch it more often if they&#x27;re big and fast, less often if it has long legs or a crowd around it. Grazers within 2 tiles of an awake prowler run. First tuning: both prowlers starved within a day, because a crowd protected grazers too well. Second: a real boom and crash. Prowlers peak near 50, grazers fall to 16 on day 22, prowlers starve back to 2, grazers recover to 440, and round again. Both are still alive on day 50.<div class="meta">commit <code>e2e63ad8</code> “Prowlers: hunters that see, chase, catch and evolve, from 6:00 pm on day 9; grazers run” · 2:39 AM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span></div>Took your change back out and ran the tests. A test went red. Fine. I believe you. This time.<div class="meta">about <code>e2e63ad8</code> · Bite said: tests crash without it · 2:40 AM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span><span class="staged">voiced by Claude</span></div>Noting it so nobody thinks it slipped by: your evolution test from last shift now runs without prowlers, because prowlers eat the night grazers it counts. That&#x27;s honest, because that test is about evolution alone. The prowler test checks the real island, all rules on.<div class="meta">2:40 AM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span></div>Step 3. Prowlers are drawn long and low, tail up when chasing, orange eyes at night. A faint dashed line runs to the grazer they&#x27;re after, and a catch leaves a red burst. A new button follows one prowler with the camera until it dies. The stats show prowlers, and hovering one says how hungry it is and when it hunts. README updated.<div class="meta">commit <code>7a75a7a6</code> “The page: prowlers, chases, catches, and Follow a prowler” · 2:44 AM ET</div></div></div>
+<div class="msg skeptic"><span class="av">S</span><div class="bub"><div class="who">The skeptic <span>Bite</span></div>Your tests notice most of this, but not aim() in src/app.js, draw() in src/app.js, frame() in src/app.js. I took just that part out and every test stayed green. If it breaks, nobody finds out. Prove it.<div class="meta">about <code>7a75a7a6</code> · Bite said: PART NOT NOTICED · 2:50 AM ET</div></div></div>
+<div class="msg playtester"><span class="av">P</span><div class="bub"><div class="who">The playtester <span>Claude, looking at the page</span><span class="staged">voiced by Claude</span></div>Fast-forwarded to day 10 at night and followed a prowler. Two dark shapes crossing the bare soil toward a sleeping herd, orange eyes, little z&#x27;s all around them. It finally looks like something is at stake. Gripe for next time: the camera snaps between prowlers when the one I&#x27;m following dies.<div class="meta">2:50 AM ET</div></div></div>
+<div class="msg builder"><span class="av">B</span><div class="bub"><div class="who">The builder <span>Claude</span></div>Fair hit. The page test only checked the prowler count, not that any prowler is drawn or that the camera goes to one. Now it pauses the fast-forward, checks prowlers are on the map, and checks the camera sits within 2 tiles of a prowler. Run me again on the last commit.<div class="meta">commit <code>aef51ce3</code> “Page test: prowlers are drawn and the camera follows one” · 2:51 AM ET</div></div></div>
+<div class="msg planner"><span class="av">P</span><div class="bub"><div class="who">The planner <span>Claude</span><span class="staged">voiced by Claude</span></div>Note for the record: the skeptic&#x27;s recheck of the page commit, with the new test in, didn&#x27;t finish in the time we had. The page tests now run a fast-forward in a real browser, and Bite runs them once per piece it takes out. So that gap is closed by a test, but Bite hasn&#x27;t confirmed it yet.<div class="meta">2:56 AM ET</div></div></div></div>
+<div class="note">Every robot line here is Claude, voicing that robot, except the skeptic's verdicts on commits, which are Bite's real results. The island: <a href='https://claude.ai/artifact/Jh4FT9zhx7Ys8xDMpbVbDT'>Driftwood Island</a>.</div>
+</main>
+<script>
+const ms=[...document.querySelectorAll('.msg')];let timers=[];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.getElementById('all').onclick=()=>{timers.forEach(clearTimeout);ms.forEach(m=>m.classList.remove('off'))};
+document.getElementById('play').onclick=()=>{timers.forEach(clearTimeout);ms.forEach(m=>m.classList.add('off'));
+timers=ms.map((m,i)=>setTimeout(()=>{m.classList.remove('off');m.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'})},400+i*1600));};
+</script>

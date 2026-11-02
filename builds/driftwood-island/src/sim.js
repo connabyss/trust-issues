@@ -5,6 +5,7 @@ import { makeIsland, around, W, H, SEA, SAND, SOIL, ROCK, SEED, idx } from "./is
 import { sunAt, TICKS_PER_DAY, islandTime } from "./clock.js";
 import { makeRng, seedFrom } from "./rng.js";
 import { mutate, distance, average, awakeAt, nameFor, weather } from "./genes.js";
+import { camouflage, sightRange, catchChance, prowlerAwake, GROUND_LIGHT } from "./prowl.js";
 
 export const DAY = TICKS_PER_DAY;
 export const RULES = [
@@ -12,6 +13,7 @@ export const RULES = [
   { id: "grazers", since: 2 * DAY + 48, what: "Grazers eat grass, wander to greener ground, sleep at night, breed when fed, starve when not." },
   { id: "dew", since: 7 * DAY + 36, what: "Grass grows a little at night too, in the dew, so there's food for anything awake in the dark." },
   { id: "evolution", since: 7 * DAY + 36, what: "Babies inherit their parent's size, legs, coat and waking hours, with small changes. A line that drifts far enough from where it began becomes a new kind." },
+  { id: "prowlers", since: 9 * DAY + 108, what: "Prowlers hunt grazers. They spot them more easily when a coat stands out, chase, catch, have young and evolve. Grazers that see one run, and a grazer in a crowd is harder to catch." },
 ];
 
 const ISLAND = makeIsland();
@@ -39,12 +41,13 @@ export const LANDING = (() => {
 
 export function makeState() {
   return { tick: -1, grass: new Float32Array(W * H), grazers: [], nextId: 1, history: [], marks: {}, starvedToday: 0,
-    kinds: [], evo: false };
+    kinds: [], evo: false, prowlers: [], eatenToday: 0 };
 }
 
 export function cloneState(s) {
   return { ...s, grass: Float32Array.from(s.grass), grazers: s.grazers.map((g) => ({ ...g })), history: [...s.history],
-    marks: { ...s.marks }, kinds: s.kinds.map((k) => ({ ...k })) };
+    marks: { ...s.marks }, kinds: s.kinds.map((k) => ({ ...k })),
+    prowlers: s.prowlers.map((p) => ({ ...p })) };
 }
 
 const soilCount = ISLAND.tile.filter((t) => t === SOIL).length;
@@ -196,6 +199,8 @@ function evolvedGrazers(s, tick) {
     const up = awakeAt(g, alt);
     z.energy -= weather(g, daytime, L, up);
     if (!up) { z.energy -= 0.004 + 0.004 * g.size; continue; }
+    if (s.prowlers.length && flee(s, z)) { z.energy -= 0.012 + 0.012 * g.size + 0.01 * g.legs; continue; }
+    z.fleeing = false;
     const here = s.grass[z.at];
     if (here > 0.45) {
       // Bigger mouths take more; in the dark only night-eyed grazers eat well.
@@ -267,6 +272,118 @@ function evolvedGrazers(s, tick) {
   }
 }
 
+// ---- prowlers (shift 3) ----
+
+const cheb = (a, b) => Math.max(Math.abs((a % W) - (b % W)), Math.abs(Math.floor(a / W) - Math.floor(b / W)));
+const ON_LAND = (i) => ISLAND.tile[i] !== SEA;
+
+function groundLight(s, i) {
+  const t = ISLAND.tile[i];
+  if (t === SAND) return GROUND_LIGHT.sand;
+  if (t === ROCK) return GROUND_LIGHT.rock;
+  return s.grass[i] > 0.4 ? GROUND_LIGHT.grass : GROUND_LIGHT.soil;
+}
+
+// An awake grazer that sees a prowler within 2 tiles runs: one step per tick, and long legs more, always to the
+// neighbouring tile furthest from it. Returns true if it ran (and so didn't eat this tick).
+function flee(s, z) {
+  let near = null, nd = 3;
+  for (const p of s.prowlers) { const d = cheb(p.at, z.at); if (d < nd && p.awake) { nd = d; near = p; } }
+  if (!near) return false;
+  const steps = 1 + Math.floor(z.g.legs * 3);
+  for (let n = 0; n < steps; n++) {
+    let best = z.at, bd = cheb(near.at, z.at);
+    for (const j of around(z.at)) if (walkable(j) && cheb(near.at, j) > bd) { bd = cheb(near.at, j); best = j; }
+    z.at = best;
+  }
+  z.fleeing = true;
+  return true;
+}
+
+// Where prowlers come ashore: the sand tile furthest north.
+const NORTH_BEACH = (() => {
+  for (let i = 0; i < W * H; i++) if (ISLAND.tile[i] === SAND) return i;
+  return LANDING;
+})();
+
+const MAX_PROWLERS = 120;
+
+function prowlers(s, tick) {
+  const rng = rngFor("prowlers", tick), alt = Math.round(sunAt(tick) * 10) / 10, dark = alt <= -3;
+  if (!s.marks.prowlersArrived || (s.prowlers.length === 0 && tick - s.marks.prowlerLanding >= 10 * DAY)) {
+    for (let k = 0; k < 2; k++) {
+      s.prowlers.push({ id: s.nextId++, at: NORTH_BEACH, energy: 1.5, age: 3 * DAY, born: tick,
+        g: mutate({ size: 0.5, legs: 0.5, night: 0.5 }, rng, 0.2), awake: false, chasing: null });
+    }
+    say(s, s.marks.prowlersArrived ? "Two more prowlers swam ashore. The hunt starts again." :
+      "Two prowlers swam ashore on the north beach. Something on the island hunts now.");
+    s.marks.prowlersArrived = true;
+    s.marks.prowlerLanding = tick;
+  }
+  // Who's near whom: grazers by tile, so catches can count the crowd around their target.
+  const byTile = new Map();
+  for (const z of s.grazers) byTile.set(z.at, (byTile.get(z.at) || 0) + 1);
+  const crowd = (i) => { let n = byTile.get(i) || 0; for (const j of around(i)) n += byTile.get(j) || 0; return n - 1; };
+  const eaten = new Set(), babies = [];
+  for (const p of s.prowlers) {
+    p.age++;
+    p.awake = prowlerAwake(p.g, alt);
+    p.chasing = null;
+    if (!p.awake) { p.energy -= 0.004; continue; }
+    p.energy -= 0.005 + 0.006 * p.g.size + 0.004 * p.g.legs;
+    // Spot the nearest grazer it can see.
+    let target = null, td = Infinity;
+    for (const z of s.grazers) {
+      if (eaten.has(z)) continue;
+      const d = cheb(p.at, z.at);
+      if (d >= td || d > 7) continue;
+      if (d <= sightRange(camouflage(z.g.coat, groundLight(s, z.at), dark), dark, p.g.night)) { td = d; target = z; }
+    }
+    if (target) {
+      p.chasing = target.id;
+      const steps = 1 + Math.floor(p.g.legs * 2.5);
+      for (let n = 0; n < steps && p.at !== target.at; n++) {
+        let best = p.at, bd = cheb(p.at, target.at);
+        for (const j of around(p.at)) if (ON_LAND(j) && cheb(j, target.at) < bd) { bd = cheb(j, target.at); best = j; }
+        if (best === p.at) break;
+        p.at = best;
+      }
+      if (p.at === target.at && rng() < catchChance(p.g, target.g, crowd(target.at))) {
+        eaten.add(target);
+        p.energy = Math.min(3, p.energy + 1.2);
+        s.eatenToday++;
+        if (!s.marks.firstKill) {
+          s.marks.firstKill = true;
+          const k = s.kinds[target.kind - 1];
+          say(s, `A prowler caught its first grazer${k && k.named ? `, a ${k.name}` : ""}.`);
+        }
+      }
+    } else {
+      const ways = around(p.at).filter(ON_LAND);
+      if (ways.length) p.at = ways[Math.floor(rng() * ways.length)];
+    }
+    if (p.energy > 2 && p.age > 2 * DAY && s.prowlers.length + babies.length < MAX_PROWLERS && rng() < 0.01) {
+      p.energy -= 1;
+      babies.push({ id: s.nextId++, at: p.at, energy: 1, age: 0, born: tick, g: mutate(p.g, rng, 0.15), awake: p.awake, chasing: null });
+      if (!s.marks.firstCub) { s.marks.firstCub = true; say(s, "The first prowler cub was born on the island."); }
+    }
+  }
+  if (eaten.size) s.grazers = s.grazers.filter((z) => !eaten.has(z));
+  const before = s.prowlers.length;
+  s.prowlers = s.prowlers.filter((p) => p.energy > 0 && p.age <= 25 * DAY).concat(babies);
+  for (const n of [5, 10, 25, 50, 100]) {
+    if (!s.marks["prowl" + n] && s.prowlers.length >= n) { s.marks["prowl" + n] = true; say(s, `There are now ${n} prowlers.`); }
+  }
+  if (before > 0 && s.prowlers.length === 0) say(s, "The last prowler died. The grazers can rest.");
+  if ((tick + 1) % DAY === 0) {
+    if (s.eatenToday >= 5 && s.eatenToday > (s.marks.worstHunt || 0) * 1.25) {
+      say(s, `The worst day of hunting yet: prowlers caught ${s.eatenToday} grazers.`);
+      s.marks.worstHunt = s.eatenToday;
+    }
+    s.eatenToday = 0;
+  }
+}
+
 // Dew: at night, grass that's already there grows a little (slower than in sunshine).
 function dew(s, tick) {
   if (Math.round(sunAt(tick) * 10) / 10 > -3) return;
@@ -274,7 +391,7 @@ function dew(s, tick) {
   for (let i = 0; i < W * H; i++) if (g[i] > 0 && g[i] < 1) g[i] = Math.min(1, g[i] + 0.006 * ISLAND.fertile[i]);
 }
 
-const RUN = { grass, grazers, evolution, dew };
+const RUN = { grass, grazers, evolution, dew, prowlers };
 
 // Move the world forward one tick, applying only the rules that have started.
 // `extra` lets a test plug in a rule that isn't part of the island (to prove a later rule can't touch the past).
@@ -300,6 +417,7 @@ export function fingerprint(s) {
     mix(z.id); mix(z.at); mix(Math.round(z.energy * 10000)); mix(z.age);
     if (z.g) for (const v of Object.values(z.g)) mix(Math.round(v * 10000)); // genes exist only once evolution starts
   }
+  for (const p of s.prowlers) { mix(p.id); mix(p.at); mix(Math.round(p.energy * 10000)); } // none before shift 3
   for (const e of s.history) { mix(e.tick); for (const ch of e.text) mix(ch.charCodeAt(0)); }
   return (h >>> 0).toString(16).padStart(8, "0");
 }

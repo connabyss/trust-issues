@@ -76,11 +76,14 @@ test("names say what stands out", () => {
   assert.deepEqual(coatColour(1), [44, 38, 36]);
 });
 
-test("over the next two weeks the island picks: grazers awake at midnight appear, and new kinds split off and get names", () => {
+// Evolution on its own, without the prowlers of shift 3 (they eat a lot of the night grazers this test counts).
+const NO_HUNT = RULES.filter((r) => r.id !== "prowlers");
+
+test("with nothing hunting, over two weeks the island picks: grazers awake at midnight spread, and new kinds split off and get names", () => {
   const s = makeState();
-  runTo(MIDNIGHT(10), RULES, s);
+  runTo(MIDNIGHT(10), NO_HUNT, s);
   const owls0 = s.grazers.filter((z) => z.g.night > 0.5).length;
-  runTo(MIDNIGHT(21), RULES, s);
+  runTo(MIDNIGHT(21), NO_HUNT, s);
   const owls = s.grazers.filter((z) => z.g.night > 0.5).length;
   assert.ok(owls > owls0 + 50, `night grazers should spread (from ${owls0} to ${owls})`);
   const named = s.kinds.filter((k) => k.named);
