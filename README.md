@@ -145,6 +145,22 @@ herds filled the 600 cap and ate the island brown, or starved by the hundred eve
 logic commit this time; the playtester left two gripes for shift 2 (you see a still picture unless you press replay,
 and grazers are small targets).
 
+## Build 6: Driftwood Island evolves (November 2, 2026)
+
+CH watched the island at 2 am and saw one herd asleep: "make it evolution", and let the robots decide what that
+means. They picked genes you can see (size, legs, coat, waking hours), new kinds that split off and get names, and a
+week's fast-forward. The builder wanted a hunter too; the skeptic said no, one evolving species per shift, so a test can
+tell which rule did what. Evolution starts at 6:00 am on day 7, after the moment it was written, so the past stays put.
+
+- The page: [builds/driftwood-island](builds/driftwood-island/) (38 tests).
+- The chat replay: [shifts/2026-11-02-build-6.html](shifts/2026-11-02-build-6.html).
+- The build's own commits: [shifts/2026-11-02-build-6.commits.txt](shifts/2026-11-02-build-6.commits.txt).
+
+Highlights: the first try evolved nothing. Two weeks of starving and the averages didn't move, because nothing
+rewarded being different. The island needed reasons: sun that overheats dark coats, nights that chill small grazers,
+and dew that feeds anything awake in the dark. One shift-1 pin (noon on day 7) moved to 5:50 am, because noon hadn't
+happened yet when evolution was added; the skeptic allowed it once.
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.
