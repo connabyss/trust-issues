@@ -34,7 +34,7 @@ async function open(root, fn) {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
-    await page.clock.setFixedTime(NOON);
+    await page.clock.install({ time: NOON });
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
     await page.waitForFunction(() => document.getElementById("clock").textContent.startsWith("Day 7"));
     await fn(page);
@@ -50,13 +50,20 @@ test("the page shows the same island the rules give for that moment", { skip, ti
     assert.equal(await page.textContent("#count"), String(expected.grazers.length));
     assert.equal(await page.locator("#history li").count(), expected.history.length);
     assert.match(await page.textContent("#history li:last-child"), /island rose from the sea/);
-    // The island is drawn: sea blue at the corner, land somewhere in the middle.
-    const px = await page.evaluate(() => {
-      const c = document.getElementById("isle"), d = c.getContext("2d");
-      return [d.getImageData(2, 2, 1, 1).data, d.getImageData(c.width / 2, c.height / 2, 1, 1).data].map((a) => [...a]);
+    // The island is drawn close up: both sea blue and green grass show somewhere on the map.
+    const seen = await page.evaluate(() => {
+      const c = document.getElementById("isle"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+      let sea = 0, grass = 0;
+      for (let i = 0; i < d.length; i += 4 * 97) { if (d[i + 2] > d[i] + 40) sea++; if (d[i + 1] > d[i] + 30 && d[i + 1] > d[i + 2] + 30) grass++; }
+      return { sea, grass };
     });
-    assert.ok(px[0][2] > px[0][0], "the corner should be sea blue");
-    assert.ok(px[1][0] > px[1][2] || px[1][1] > px[1][2], "the middle should be land");
+    assert.ok(seen.sea > 20, "some sea should show");
+    assert.ok(seen.grass > 20, "some grass should show");
+    // Always moving: the picture changes from one moment to the next even when the island's own clock doesn't.
+    const frame = () => page.evaluate(() => { const c = document.getElementById("isle"); return c.toDataURL(); });
+    const a = await frame();
+    await page.clock.runFor(700);
+    assert.notEqual(await frame(), a, "the map should be moving");
     if (process.env.SHOTS) await page.screenshot({ path: join(process.env.SHOTS, "island-1.png") });
     // The replay runs through yesterday's night: the clock shows day 6 for a while.
     await page.click("#replay");
@@ -69,7 +76,13 @@ test("the page shows the same island the rules give for that moment", { skip, ti
 test("the one-file version works on its own", { skip, timeout: 60000 }, async () => {
   const dir = mkdtempSync(join(tmpdir(), "isle-"));
   execFileSync(process.execPath, [new URL("../tools/bundle.mjs", import.meta.url).pathname, join(dir, "index.html")]);
+  const expected = runTo(tickAt(NOON));
   await open(dir, async (page) => {
     assert.equal(await page.textContent("#clock"), "Day 7, 12:00 pm");
+    // Same island as the module version: same herd, and a real share of green (not "NaN%").
+    assert.equal(await page.textContent("#count"), String(expected.grazers.length));
+    assert.match(await page.textContent("#green"), /^\d+%$/);
+    assert.equal(await page.locator("#history li").count(), expected.history.length);
+    assert.ok(await page.evaluate(() => document.getElementById("isle").clientHeight > 100), "the map should be on the page");
   });
 });

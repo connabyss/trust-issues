@@ -8,7 +8,12 @@ for (const name of order) {
   let src = readFileSync(new URL(`../src/${name}.js`, import.meta.url), "utf8");
   const exported = new Set();
   src = src.replace(/^import \{([^}]+)\} from "\.\/(\w+)\.js";$/gm, (_, names, from) => `const {${names}} = __${from};`);
-  src = src.replace(/^export (?:async )?(function|const|let|class) (\w+)/gm, (m, kind, id) => { exported.add(id); return m.replace(/^export /, ""); });
+  src = src.replace(/^export (?:async )?(function|const|let|class) (\w+)(.*)$/gm, (m, kind, id, rest) => {
+    exported.add(id);
+    // "export const A = 1, B = 2" exports B too: pick up every name declared on the line.
+    if (kind === "const" || kind === "let") for (const [, more] of rest.matchAll(/,\s*([A-Za-z_$][\w$]*)\s*=(?!=)/g)) exported.add(more);
+    return m.replace(/^export /, "");
+  });
   src = src.replace(/^export \{([^}]+)\};$/gm, (_, names) => { names.split(",").forEach((n) => exported.add(n.trim())); return ""; });
   if (/^\s*(import|export)\b/m.test(src)) throw new Error(`${name}.js has an import/export the bundler can't read`);
   js += `const __${name} = (() => {\n${src}\nreturn { ${[...exported].join(", ")} };\n})();\n`;
