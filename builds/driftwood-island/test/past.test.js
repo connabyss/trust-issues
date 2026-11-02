@@ -4,13 +4,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { RULES, DAY, makeState, runTo, fingerprint, cloneState, step } from "../src/sim.js";
 
-const PINNED = { 3: "cd73c9b3", 5: "0faf6f54", 7: "b881addf" }; // noon on days 3, 5 and 7
+// Noon on days 3 and 5, and 5:50 am on day 7 (the last moment before evolution, which starts at 6:00 am on day 7).
+// Noon on day 7 was pinned too, but it was still in the future when evolution was added (at 2 am on day 7), so
+// that pin moved to the last moment that had already happened.
+const PINNED = { [3 * DAY + 72]: "cd73c9b3", [5 * DAY + 72]: "0faf6f54", [7 * DAY + 35]: "484ad2c8" };
 
-test("the island's past is pinned: noon on days 3, 5 and 7 look exactly as they did when shift 1 was built", () => {
+test("the island's past is pinned: days 3, 5 and 7 (up to evolution) look exactly as they did when shift 1 was built", () => {
   const s = makeState();
-  for (const [day, print] of Object.entries(PINNED)) {
-    runTo(Number(day) * DAY + 72, RULES, s);
-    assert.equal(fingerprint(s), print, `day ${day} changed`);
+  for (const [tick, print] of Object.entries(PINNED)) {
+    runTo(Number(tick), RULES, s);
+    assert.equal(fingerprint(s), print, `tick ${tick} changed`);
   }
 });
 
