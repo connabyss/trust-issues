@@ -41,6 +41,7 @@ ROBOTS = {
     "skeptic": ("The skeptic", "Bite", "🧐"),
     "janitor": ("The janitor", "a dead-code sweep", "🧹"),
     "historian": ("The historian", "Bite's comeback alarm", "📜"),
+    "playtester": ("The playtester", "Claude, looking at the page", "🎮"),
 }
 
 
@@ -379,7 +380,7 @@ h1{font:750 clamp(1.7rem,5vw,2.4rem)/1.1 var(--display);margin:0 0 6px;text-wrap
 .cast b{display:block;color:var(--fg)}
 .av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--bg);
 font:750 .95rem var(--display);background:var(--c)}
-.writer,.builder{--c:var(--writer)}.planner{--c:var(--planner)}.skeptic{--c:var(--skeptic)}.janitor{--c:var(--janitor)}.historian{--c:var(--historian)}
+.writer,.builder{--c:var(--writer)}.planner{--c:var(--planner)}.skeptic{--c:var(--skeptic)}.janitor{--c:var(--janitor)}.historian{--c:var(--historian)}.playtester{--c:var(--planner)}
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
 button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;
 padding:6px 12px;cursor:pointer}button:focus-visible{outline:2px solid var(--writer);outline-offset:2px}
