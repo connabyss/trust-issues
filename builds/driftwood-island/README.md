@@ -26,6 +26,20 @@ everyone who opens it sees the same island at the same moment. It rose on Octobe
 - What the rules give, if nothing new is added: night grazers spread from day 11, and by day 21 several kinds live
   side by side. Coat colour mostly matters for heat for now; nothing hunts yet.
 
+## Shift 3: prowlers (November 2, 2026, from 6:00 pm on day 9)
+
+- Two prowlers swim ashore on the north beach. Each tick an awake prowler chases the nearest grazer it can see, and
+  catches it more often when it's big and fast, less often when the grazer has long legs or a crowd around it.
+- Camouflage (`src/prowl.js`): a coat close to the ground's lightness, or a dark coat at night, shortens how far a
+  prowler sees it. Prowlers with night eyes see further in the dark.
+- Grazers within 2 tiles of an awake prowler run, and long legs run further.
+- Prowlers have young, evolve size, speed and hunting hours, starve, and die of old age after 25 days. If they all
+  die, two more swim ashore ten days later.
+- What the rules give: boom and crash. Prowlers peak near 50, grazers fall to a few dozen, prowlers starve back to a
+  handful, grazers recover to hundreds, and round again. Both are still alive on day 50 (tested to day 30).
+- The page draws prowlers (orange eyes at night), a faint line to whoever they're chasing, a red burst at a catch,
+  and can follow one prowler.
+
 ## The promise: the past never changes
 
 Every rule has a start time and does nothing before it, and each rule rolls its own dice every tick, so a rule added
@@ -34,12 +48,12 @@ day 7 was pinned in shift 1, but it was still in the future when evolution was a
 to the last moment that had happened), and
 proves that a made-up rule starting on day 9 changes nothing before day 9. Future shifts add rules that start in the
 future (rain, seasons, predators...) and must leave those fingerprints alone. `test/evolution.test.js` also pins noon on day 9,
-so the next shift must start after that.
+so the next shift must start after that. Prowlers start at 6:00 pm on day 9.
 
 ## Run it
 
 Open `index.html` through a small web server (`python -m http.server 8000`), or pack it into one file with
-`node tools/bundle.mjs island.html`. Tests: `npm test` (38; two open the page in headless Chromium with its clock frozen,
+`node tools/bundle.mjs island.html`. Tests: `npm test` (44; two open the page in headless Chromium with its clock frozen,
 and skip if Playwright isn't installed).
 
 Not tested: how it looks (colours, sizes, the animation, stars, the dusk glow) and the hover card. Known gripes from

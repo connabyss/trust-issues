@@ -76,6 +76,7 @@ test("the page shows the same island the rules give for that moment", { skip, ti
 test("fast-forward shows the week ahead, kinds splitting off, then comes back to now", { skip, timeout: 90000 }, async () => {
   await open(new URL("..", import.meta.url).pathname, async (page) => {
     assert.equal(await page.locator("#kinds li").count(), 1); // noon on day 7: evolution has started, one kind
+    assert.equal(await page.textContent("#prowl"), "0");
     await page.click("#ff");
     assert.equal(await page.getAttribute("#ff", "aria-pressed"), "true");
     assert.ok(await page.isVisible(".preview-tag"));
@@ -91,6 +92,22 @@ test("fast-forward shows the week ahead, kinds splitting off, then comes back to
     assert.match(await page.textContent("#clock"), /^Day 1[2-4],/);
     assert.ok(await page.locator("#kinds li").count() >= 3, "kinds should have split off by then");
     assert.match(await page.textContent("#history"), /split off/);
+    // By then the prowlers have landed (6 pm on day 9), and the camera can follow one.
+    assert.match(await page.textContent("#history"), /prowlers swam ashore/);
+    assert.ok(Number(await page.textContent("#prowl")) > 0);
+    await page.click("#hunt");
+    assert.equal(await page.getAttribute("#hunt", "aria-pressed"), "true");
+    // Prowlers are on the map, and the camera closes in on one of them.
+    await page.click('[data-speed="pause"]');
+    await page.clock.runFor(6000);
+    const cam = await page.evaluate(() => {
+      const i = window.__island, v = i.view, s = i.shown;
+      const near = Math.min(...s.prowlers.map((p) => Math.hypot((p.at % 72) + 0.5 - v.x, Math.floor(p.at / 72) + 0.5 - v.y)));
+      return { near, prowlersDrawn: i.drawn.filter((d) => d.prowler).length };
+    });
+    assert.ok(cam.prowlersDrawn > 0, "prowlers should be drawn");
+    assert.ok(cam.near < 2, `the camera should be on a prowler (${cam.near.toFixed(1)} tiles off)`);
+    await page.click('[data-speed="fast"]');
     await page.clock.runFor(15000);
     assert.equal(await page.textContent("#clock"), "Day 7, 12:00 pm");
     assert.equal(await page.locator("#kinds li").count(), 1);

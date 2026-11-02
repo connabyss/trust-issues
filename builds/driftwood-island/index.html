@@ -49,11 +49,12 @@ li{display:grid;gap:1px}
 <main>
   <header>
     <h1>Driftwood Island</h1>
-    <p class="lede">A small island that is always running. Grass spreads in the real daylight, grazers eat, sleep, raise young and sometimes starve, and from Day 7 they evolve. Everyone who opens this page sees the same island at the same moment.</p>
+    <p class="lede">A small island that is always running. Grass spreads in the real daylight, grazers eat, sleep, raise young and sometimes starve. From Day 7 they evolve, and from Day 9 something hunts them. Everyone who opens this page sees the same island at the same moment.</p>
   </header>
   <div class="stats" aria-live="polite">
     <div id="clockbox"><b id="clock">Day 0</b><span id="phase">night</span></div>
     <div><b id="count">0</b><span>grazers</span></div>
+    <div><b id="prowl">0</b><span>prowlers</span></div>
     <div><b id="nkinds">0</b><span id="nkinds-word">kinds</span></div>
     <div><b id="green">0%</b><span>of the soil green</span></div>
     <div><span>next tick in</span> <b id="next">10:00</b></div>
@@ -67,6 +68,7 @@ li{display:grid;gap:1px}
   <div class="bar">
     <button id="replay" type="button" aria-pressed="false">Replay the last 24 hours</button>
     <button id="ff" type="button" aria-pressed="false">Fast-forward a week</button>
+    <button id="hunt" type="button" aria-pressed="false">Follow a prowler</button>
     <button id="whole" type="button" aria-pressed="false">Whole island</button>
     <span class="speeds" role="group" aria-label="Playback speed">
       <button type="button" data-speed="pause" aria-pressed="false">Pause</button>

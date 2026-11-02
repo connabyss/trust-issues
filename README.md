@@ -161,6 +161,21 @@ rewarded being different. The island needed reasons: sun that overheats dark coa
 and dew that feeds anything awake in the dark. One shift-1 pin (noon on day 7) moved to 5:50 am, because noon hadn't
 happened yet when evolution was added; the skeptic allowed it once.
 
+## Build 7: something hunts (November 2, 2026)
+
+CH asked what the island is missing that real life has, and let the robots pick. They picked a hunter: prowlers that
+see, chase, catch and evolve, from 6:00 pm on day 9 (after the last pinned moment). Coat colour now works as
+camouflage, grazers run, and a crowd is safer. Seasons, geography and two parents are on the list for later shifts.
+
+- The page: [builds/driftwood-island](builds/driftwood-island/) (44 tests).
+- The chat replay: [shifts/2026-11-02-build-7.html](shifts/2026-11-02-build-7.html).
+- The build's own commits: [shifts/2026-11-02-build-7.commits.txt](shifts/2026-11-02-build-7.commits.txt).
+
+Highlights: the first prowlers starved within a day (crowds protected grazers too well). After tuning, real boom and
+crash cycles: grazers fall to a few dozen, prowlers starve back to a handful, and round again, both alive on day 50.
+The skeptic caught that the page test never checked a prowler is drawn or that the camera follows one; a test now
+does, but Bite's recheck with that test didn't finish in the time the shift had.
+
 ## Run your own shift
 
 Free, no API key. You need Python 3.10+ and git.
