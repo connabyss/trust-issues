@@ -18,7 +18,7 @@ h1{font:400 clamp(2rem,6vw,3.2rem)/1 var(--display);margin:0;text-wrap:balance}
 .stats span{color:var(--dim)}
 #clockbox b{color:var(--sea)}
 .frame{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--rule);background:#173a52}
-#isle{display:block;width:100%;height:auto;image-rendering:pixelated;cursor:crosshair}
+#isle{display:block;width:100%;cursor:crosshair}
 #tip{position:absolute;pointer-events:none;background:rgba(20,18,14,.85);color:#f6ecd8;font:.75rem var(--mono);padding:4px 8px;border-radius:4px;white-space:nowrap}
 .replay-tag{position:absolute;top:10px;left:10px;font:500 .72rem var(--mono);letter-spacing:.1em;text-transform:uppercase;
 background:rgba(255,140,60,.9);color:#2b1606;padding:3px 8px;border-radius:4px;display:none}
@@ -49,12 +49,13 @@ li{display:grid;gap:1px}
     <div><span>next tick in</span> <b id="next">10:00</b></div>
   </div>
   <div class="frame">
-    <canvas id="isle" aria-label="The island seen from above. Hover a grazer to meet it."></canvas>
+    <canvas id="isle" aria-label="The island seen from above, following the herd. Hover a grazer to meet it."></canvas>
     <span class="replay-tag">Replaying the last 24 hours</span>
     <div id="tip" hidden></div>
   </div>
   <div class="bar">
     <button id="replay" type="button" aria-pressed="false">Replay the last 24 hours</button>
+    <button id="whole" type="button" aria-pressed="false">Whole island</button>
     <p class="small">Island time is UTC-5 all year. The island moves every ten minutes; leave it open and watch.</p>
   </div>
   <div class="cols">
