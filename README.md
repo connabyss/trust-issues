@@ -1,15 +1,20 @@
-# trust-issues: my dev team is 4 robots
+# trust-issues: my dev team is robots
+
+![Seven little robots on a window sill at night: the planner, builder, writer, skeptic, janitor, historian and playtester](docs/banner.png)
 
 ...and one of them doesn't trust the others.
 
-Four robots work one tiny project overnight and keep each other honest. Nobody gets to say "fixed" and walk away.
+Robots work a project overnight and keep each other honest. Nobody gets to say "fixed" and walk away.
+
+**Watch it in your browser: [connabyss.github.io/trust-issues](https://connabyss.github.io/trust-issues/)**. Every
+shift plays back like a group chat, and the planet, sky maps and island the robots built are one click away.
 
 | | Robot | Who it really is | Its job |
 |---|---|---|---|
-| ✍️ | **The writer** | Claude | Fixes bugs, commits, and announces it a little too proudly. |
-| 🧐 | **The skeptic** | [Bite](https://github.com/connabyss/bite) | Takes each fix back out and runs the tests. If they all stay green, nothing proves the fix works, and it says so. |
-| 🧹 | **The janitor** | [vulture](https://github.com/jendrikseipp/vulture) | Sweeps up dead code. Keeps the sweep only if the tests stay green. |
-| 📜 | **The historian** | Bite's comeback alarm | Reads the whole history and catches a fix that a later commit quietly undid. |
+| <img src="docs/faces/writer.png" width="40" height="40" alt="writer robot"> | **The writer** | Claude | Fixes bugs, commits, and announces it a little too proudly. |
+| <img src="docs/faces/skeptic.png" width="40" height="40" alt="skeptic robot"> | **The skeptic** | [Bite](https://github.com/connabyss/bite) | Takes each fix back out and runs the tests. If they all stay green, nothing proves the fix works, and it says so. |
+| <img src="docs/faces/janitor.png" width="40" height="40" alt="janitor robot"> | **The janitor** | [vulture](https://github.com/jendrikseipp/vulture) | Sweeps up dead code. Keeps the sweep only if the tests stay green. |
+| <img src="docs/faces/historian.png" width="40" height="40" alt="historian robot"> | **The historian** | Bite's comeback alarm | Reads the whole history and catches a fix that a later commit quietly undid. |
 
 ## The workplace
 
@@ -21,7 +26,7 @@ A lemonade stand's till, about 15 lines of Python, with bugs planted on purpose:
 
 ## The first shift (November 2, 2026)
 
-Open [shifts/2026-11-02.html](shifts/2026-11-02.html) in a browser and press **Play the shift** to watch it like a group chat. The short version:
+[Watch the first shift](https://connabyss.github.io/trust-issues/shifts/2026-11-02.html) and press **Play the shift**. The short version:
 
 1. The writer fixes the negative cups, with a test. The skeptic undoes it, the test goes red: *"Fine. I believe you. This time."*
 2. The writer fixes the tip rounding, **no test**. The skeptic: *"Prove it."* The writer adds one. Now it holds.
@@ -56,7 +61,7 @@ Highlights: the skeptic sent work back twice (an untested rule-table maker, then
 the builder caught three of its own mistakes (a renamed rule, a wrong "every rule is on by default" claim, and
 comments EditorConfig doesn't allow). Nothing planted, nothing staged; the debate lines are tagged "voiced by Claude".
 
-New roles: **the planner** (Claude) finds the job and splits it into steps, **the builder** (Claude) builds one step at
+New roles: <img src="docs/faces/planner.png" width="22" height="22" alt="planner robot"> **the planner** (Claude) finds the job and splits it into steps, **the builder** (Claude) builds one step at
 a time. The skeptic lets look-only changes (pages, styles, docs) through; logic still needs a test.
 
 ## Build 2: a birth-sky map (November 2, 2026)
@@ -211,7 +216,9 @@ Every robot line is saved to `shop/shift.jsonl` as it happens. In this first ver
 
 ## Files
 
-- `robot_team.py`: the whole team in one script.
+- `robot_team.py`: the whole team in one script. It also draws each shift's replay page.
+- `make_site.py`: rebuilds `index.html`, the front page at connabyss.github.io/trust-issues.
 - `builds/`: what the team built.
 - `shifts/`: each shift's log (`.jsonl`) and its chat replay page (`.html`).
 - `notes/`: things the robots turned up.
+- `docs/`: the banner and robot faces used in this README.

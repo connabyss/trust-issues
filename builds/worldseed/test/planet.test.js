@@ -5,7 +5,7 @@ import { makePlanet, makeGrid, oceanShare, toXyz, arc } from "../src/planet.js";
 const small = { w: 96, h: 48 };
 
 test("the same word always makes the same planet", () => {
-  const a = makePlanet("Connor", small), b = makePlanet("connor", small);
+  const a = makePlanet("Orbit", small), b = makePlanet("orbit", small);
   assert.deepEqual(a.elev, b.elev);
 });
 

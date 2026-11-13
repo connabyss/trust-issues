@@ -43,7 +43,7 @@ export function lightsAt(world, year) {
   return lights;
 }
 
-// The share link: the word, plus any meteors dropped (year.patch). "#connor~2000.12345"
+// The share link: the word, plus any meteors dropped (year.patch). "#orbit~2000.12345"
 export function encodeHash(word, meteors = []) {
   return "#" + encodeURIComponent(word.trim()) + meteors.map((m) => `~${m.year}.${m.cell}`).join("");
 }
