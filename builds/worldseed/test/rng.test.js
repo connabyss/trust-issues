@@ -4,14 +4,14 @@ import { seedFrom, makeRng } from "../src/rng.js";
 import { makeNoise } from "../src/noise.js";
 
 test("the same word always gives the same seed and the same rolls", () => {
-  assert.equal(seedFrom("Connor"), seedFrom("Connor"));
-  assert.equal(seedFrom("  connor "), seedFrom("Connor"));
+  assert.equal(seedFrom("Orbit"), seedFrom("Orbit"));
+  assert.equal(seedFrom("  orbit "), seedFrom("Orbit"));
   const a = makeRng(seedFrom("pebble")), b = makeRng(seedFrom("pebble"));
   for (let i = 0; i < 50; i++) assert.equal(a(), b());
 });
 
 test("different words give different seeds and different rolls", () => {
-  const words = ["a", "b", "mars", "Mars!", "connor", "assata", "huey", "pebble", "ocean", "worldseed"];
+  const words = ["a", "b", "mars", "Mars!", "orbit", "assata", "huey", "pebble", "ocean", "worldseed"];
   assert.equal(new Set(words.map(seedFrom)).size, words.length);
   assert.notEqual(makeRng(seedFrom("a"))(), makeRng(seedFrom("b"))());
 });

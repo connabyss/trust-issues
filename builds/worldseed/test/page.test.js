@@ -34,9 +34,9 @@ test("the page draws a planet, history runs, and a dropped meteor lands in the c
       const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
       const errors = [];
       page.on("pageerror", (e) => errors.push(String(e)));
-      await page.goto(`http://127.0.0.1:${server.address().port}/#connor`);
+      await page.goto(`http://127.0.0.1:${server.address().port}/#orbit`);
       await page.waitForFunction(() => document.querySelectorAll("#log li").length > 5, null, { timeout: 30000 });
-      assert.equal(await page.inputValue("#word"), "connor");
+      assert.equal(await page.inputValue("#word"), "orbit");
       // The middle of the globe is drawn (not empty space), and the corner is space.
       const px = await page.evaluate(() => {
         const c = document.getElementById("globe"), d = c.getContext("2d");
@@ -50,7 +50,7 @@ test("the page draws a planet, history runs, and a dropped meteor lands in the c
       const box = await page.locator("#marks").boundingBox();
       await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
       await page.waitForFunction(() => [...document.querySelectorAll("#log .ev-meteor")].length > 0, null, { timeout: 30000 });
-      assert.match(await page.evaluate(() => location.hash), /^#connor~\d+\.\d+$/);
+      assert.match(await page.evaluate(() => location.hash), /^#orbit~\d+\.\d+$/);
       if (process.env.SHOTS) await page.screenshot({ path: join(process.env.SHOTS, "page-2.png") });
       // Scrub to the end of time: the year reads 6,000.
       await page.locator("#time").fill("6000");
