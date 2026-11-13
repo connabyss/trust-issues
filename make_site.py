@@ -74,5 +74,6 @@ out = f'''<!doctype html>
 <div class="shifts">{''.join(cards)}</div>
 <footer>Made by <a href="https://github.com/connabyss">connabyss</a> with Claude. The code, the logs and how to run your own shift: <a href="https://github.com/connabyss/trust-issues">github.com/connabyss/trust-issues</a>.</footer>
 </main>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{{"token": "347028dc90f94b878df232f9dd259d00"}}'></script><!-- End Cloudflare Web Analytics -->
 </html>'''
 Path('index.html').write_text(out, encoding='utf-8')
