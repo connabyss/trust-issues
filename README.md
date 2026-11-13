@@ -217,7 +217,7 @@ Every robot line is saved to `shop/shift.jsonl` as it happens. In this first ver
 ## Files
 
 - `robot_team.py`: the whole team in one script. It also draws each shift's replay page.
-- `make_site.py`: rebuilds `index.html`, the front page at connabyss.github.io/trust-issues.
+- `make_site.py`: rebuilds `index.html`, the front page at connabyss.github.io/trust-issues. `404.html` is the page for a wrong address there.
 - `builds/`: what the team built.
 - `shifts/`: each shift's log (`.jsonl`) and its chat replay page (`.html`).
 - `notes/`: things the robots turned up.

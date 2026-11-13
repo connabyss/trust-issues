@@ -480,13 +480,22 @@ code{font:.82em var(--mono);background:color-mix(in srgb,var(--fg) 7%,transparen
 .dots i{width:7px;height:7px;border-radius:50%;background:var(--mut);animation:b 1s infinite}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
 @keyframes b{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
-.note{border-top:1px solid var(--line);margin:34px 0 0;padding:18px 0 56px;font-size:.94rem;color:var(--mut)}
+.note{border-top:1px solid var(--line);margin:34px 0 0;padding:18px 0 28px;font-size:.94rem;color:var(--mut)}
 .note b{color:var(--fg)}.note p{margin:0 0 10px;max-width:68ch}
+.home{display:inline-flex;align-items:center;gap:6px;color:#eef2fb;text-decoration:none;font:700 .92rem var(--body);
+ background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:7px 12px 7px 9px;margin:0 0 18px}
+.home:hover{background:rgba(255,255,255,.14)}.home svg{width:16px;height:16px}
+.pager{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 56px}
+.pager a{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-decoration:none;color:var(--fg);min-width:0}
+.pager a:hover{border-color:var(--writer)}
+.pager small{display:block;color:var(--mut);font-size:.82rem}.pager b{font:800 1rem/1.25 var(--display)}
+.pager .next{text-align:right;grid-column:2}.pager .all{grid-column:1/-1;text-align:center}
 @media (max-width:520px){.crew svg{width:46px;height:46px;margin-bottom:-10px}.win{width:44px;height:44px;top:20px;right:30px;box-shadow:-11px 7px 0 0 #f2d88f}
 .count{width:100%;margin:0}.badge{padding:8px 10px;gap:9px}.badge svg{width:36px;height:36px}.badge b{font-size:.92rem}.badge span{font-size:.8rem}}
 @media (prefers-reduced-motion:reduce){.msg.in{animation:none}.dots i{animation:none}button{transition:none}}
 </style>
 <header><div class="win"></div><div class="wrap">
+<a class="home" href="../"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>All shifts</a>
 <p class="eyebrow"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="8"/><path d="M10 5v5l3 2"/></svg>__EYEBROW__</p>
 <h1>__H1__</h1>
 <p class="sub">__SUB__</p>
@@ -499,6 +508,7 @@ code{font:.82em var(--mono);background:color-mix(in srgb,var(--fg) 7%,transparen
 <div id="chat">__MSGS__
 <div class="typing" id="typing"></div></div>
 <div class="note">__NOTE__</div>
+<!--pager--><!--/pager-->
 </main>
 <script>
 const ms=[...document.querySelectorAll('.msg')],ty=document.getElementById('typing'),cnt=document.getElementById('count'),
@@ -552,7 +562,31 @@ def page(d, out, note="", h1="My dev team is 4 robots",
                          .replace("__NOTE__", note).replace("__TITLE__", html.escape(h1) + " · Trust Issues")
                          .replace("__H1__", html.escape(h1)).replace("__EYEBROW__", html.escape(eyebrow))
                          .replace("__SUB__", html.escape(sub)).replace("__DATE__", date), encoding="utf-8")
+    link_shifts(Path(out).parent)
     print(f"page: {out}")
+
+
+def _shift_key(p):
+    m = re.match(r"(\d{4}-\d\d-\d\d)(?:-build-(\d+))?$", p.stem)
+    return (m.group(1), int(m.group(2) or 0)) if m else (p.stem, 0)
+
+
+def link_shifts(folder):
+    """Fills the prev / next / all-shifts links at the bottom of every replay page in a folder, in shift order."""
+    pages = sorted((p for p in Path(folder).glob("*.html") if re.search(r"<!--pager-->", p.read_text(encoding="utf-8"))),
+                   key=_shift_key)
+    titles = [re.search(r"<h1>(.*?)</h1>", p.read_text(encoding="utf-8"), re.S).group(1) for p in pages]
+    for i, p in enumerate(pages):
+        parts = []
+        if i > 0:
+            parts.append(f'<a class="prev" href="{pages[i-1].name}"><small>&larr; Previous shift</small><b>{titles[i-1]}</b></a>')
+        if i + 1 < len(pages):
+            parts.append(f'<a class="next" href="{pages[i+1].name}"><small>Next shift &rarr;</small><b>{titles[i+1]}</b></a>')
+        parts.append('<a class="all" href="../"><b>All shifts</b></a>')
+        t = p.read_text(encoding="utf-8")
+        t = re.sub(r"<!--pager-->.*?<!--/pager-->", lambda m: '<!--pager--><nav class="pager" aria-label="More shifts">'
+                   + "".join(parts) + "</nav><!--/pager-->", t, flags=re.S)
+        p.write_text(t, encoding="utf-8")
 
 if __name__ == "__main__":
     a = sys.argv[1:]
