@@ -56,6 +56,15 @@ out = f'''<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Trust Issues: my dev team is robots</title>
 <meta name="description" content="Robots build things overnight and keep each other honest. Nobody gets to say fixed and walk away. Watch the shifts.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://connabyss.github.io/trust-issues/">
+<meta property="og:title" content="Trust Issues: my dev team is robots">
+<meta property="og:description" content="Robots build things overnight and keep each other honest. Nobody gets to say fixed and walk away. Watch the shifts.">
+<meta property="og:image" content="https://connabyss.github.io/trust-issues/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="My dev team is robots: seven little robots on a night-office windowsill under the moon">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400&display=swap">
 <style>{style}{extra_css}</style>
